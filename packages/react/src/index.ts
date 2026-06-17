@@ -33,5 +33,7 @@ export type { PopoverProps } from './chrome/Popover';
 export { LinkPopover, TablePopover, ImagePopover } from './chrome/popovers';
 export { Handle } from './chrome/Handle';
 export { PopoverHost } from './chrome/PopoverHost';
+export { AirPopover } from './chrome/AirPopover';
+export { AirPopoverHost } from './chrome/AirPopoverHost';
 export { ChromeProvider, useChrome, useCommand } from './chrome/ChromeContext';
 export type { ChromeValue, ChromeUI, ChromeOptions } from './chrome/ChromeContext';

@@ -28,6 +28,7 @@ import { Codeview } from './chrome/Codeview';
 import { Statusbar } from './chrome/Statusbar';
 import { Placeholder } from './chrome/Placeholder';
 import { PopoverHost } from './chrome/PopoverHost';
+import { AirPopoverHost } from './chrome/AirPopoverHost';
 import type { SummernotePlugin } from './plugin';
 
 type DialogKind = 'link' | 'image' | 'video' | 'help' | null;
@@ -61,6 +62,8 @@ export interface SummernoteEditorProps {
   placeholder?: string;
   /** disable the resize statusbar. */
   disableResize?: boolean;
+  /** air mode: no fixed toolbar/statusbar; a floating toolbar appears at the selection. */
+  airMode?: boolean;
   /** plugins: per-instance commands + custom toolbar buttons. */
   plugins?: readonly SummernotePlugin[];
   /** visual theme (per-instance — multiple editors with different themes can coexist). */
@@ -79,8 +82,20 @@ export interface SummernoteEditorProps {
  */
 export const SummernoteEditor = forwardRef<SummernoteEditorHandle, SummernoteEditorProps>(
   function SummernoteEditor(props, ref): JSX.Element {
-  const { value, defaultValue, onChange, options, toolbar, placeholder, disableResize, plugins, theme, lang, className } =
-    props;
+  const {
+    value,
+    defaultValue,
+    onChange,
+    options,
+    toolbar,
+    placeholder,
+    disableResize,
+    airMode,
+    plugins,
+    theme,
+    lang,
+    className,
+  } = props;
   const lastEmitted = useRef<string | null>(null);
   const editingAreaRef = useRef<HTMLDivElement | null>(null);
   const initial = value ?? defaultValue;
@@ -237,6 +252,7 @@ export const SummernoteEditor = forwardRef<SummernoteEditorHandle, SummernoteEdi
     'note-editor',
     'note-frame',
     `note-theme-${theme ?? 'lite'}`,
+    airMode ? 'note-airframe' : '',
     fullscreen ? 'fullscreen' : '',
     className ?? '',
   ]
@@ -247,7 +263,8 @@ export const SummernoteEditor = forwardRef<SummernoteEditorHandle, SummernoteEdi
   return (
     <ChromeProvider value={chrome}>
       <div className={rootClass}>
-        <Toolbar renderCustom={renderCustom} />
+        {/* air mode: no fixed toolbar — a floating one appears at the selection */}
+        {airMode ? null : <Toolbar renderCustom={renderCustom} />}
         <div className="note-editing-area" ref={editingAreaRef} style={{ position: 'relative' }}>
           {showPlaceholder ? <Placeholder text={placeholder} visible /> : null}
           <div
@@ -261,8 +278,9 @@ export const SummernoteEditor = forwardRef<SummernoteEditorHandle, SummernoteEdi
           />
           {codeview ? <Codeview value={codeHtml} onChange={setCodeHtml} /> : null}
           <PopoverHost editingAreaRef={editingAreaRef} />
+          {airMode ? <AirPopoverHost editingAreaRef={editingAreaRef} /> : null}
         </div>
-        {!disableResize && !codeview ? <Statusbar targetRef={editableRef} /> : null}
+        {!airMode && !disableResize && !codeview ? <Statusbar targetRef={editableRef} /> : null}
         {dialog === 'link' ? <LinkDialog onClose={closeDialog} /> : null}
         {dialog === 'image' ? <ImageDialog onClose={closeDialog} /> : null}
         {dialog === 'video' ? <VideoDialog onClose={closeDialog} /> : null}

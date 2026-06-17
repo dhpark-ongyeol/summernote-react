@@ -332,6 +332,21 @@
 .note-popover-link {
   margin: 0 6px;
 }
+.note-air-popover {
+  flex-wrap: wrap;
+  max-width: 320px;
+}
+/* air toolbar below the selection (mobile, §13.3) — cancel the default above-translate */
+.note-air-popover.note-air-below {
+  transform: none;
+}
+/* air mode editor has no fixed frame chrome */
+.note-airframe {
+  border: none;
+}
+.note-airframe .note-editable {
+  padding: 0;
+}
 
 /* image resize handle */
 .note-control-selection {
