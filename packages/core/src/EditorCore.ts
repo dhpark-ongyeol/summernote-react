@@ -323,20 +323,85 @@ function unwrapEl(el: HTMLElement): void {
 const INLINE_FORMAT_TAGS = ['B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'SUP', 'SUB', 'SPAN'];
 
 /**
- * Toggle an inline format (the Tier-B own-command path that replaces execCommand): wrap the
- * selected text runs via Style.styleNodes, or unwrap if the selection already sits inside a
- * matching tag. Markup is deterministic (e.g. strike -> <s>), unlike execCommand.
+ * Remove an inline format from exactly the selected text runs (handles PARTIAL/NESTED selection):
+ * for each fully-contained text node sitting inside a matching tag, split that tag out around the
+ * text node (splitTree at both boundaries) and unwrap the isolated wrapper — so `<b>he[ll]o</b>`
+ * toggled becomes `<b>he</b>ll<b>o</b>`, not a full unwrap. Assumes rng is already splitText()'d.
+ */
+function removeInline(textNodes: Node[], matchTags: readonly string[]): void {
+  const isMatch = (n: Node): boolean => matchTags.includes(n.nodeName);
+  for (const textNode of textNodes) {
+    // unwrap every matching ancestor (handles nesting like <b><b>x</b></b> and <i><b>x</b></i>)
+    let m = dom.ancestor(textNode, isMatch) as HTMLElement | null;
+    while (m) {
+      // isolate textNode out of `m`: split the tree at its start, then at its end (edge splits are
+      // structural no-ops, so a FULL selection just isolates the whole tag). After the splits the
+      // matching ancestor wraps exactly textNode's subtree -> unwrap THAT (not textNode.parentNode,
+      // which for nesting is the inner tag).
+      const right = dom.splitTree(m, { node: textNode, offset: 0 }, { isSkipPaddingBlankHTML: true });
+      if (right) {
+        dom.splitTree(right, { node: textNode, offset: dom.nodeLength(textNode) }, { isSkipPaddingBlankHTML: true });
+      }
+      const matched = dom.ancestor(textNode, isMatch) as HTMLElement | null;
+      if (!matched) {
+        break;
+      }
+      unwrapEl(matched);
+      m = dom.ancestor(textNode, isMatch) as HTMLElement | null;
+    }
+  }
+}
+
+/**
+ * Toggle an inline format (the Tier-B own-command path that replaces execCommand). splitText()s the
+ * selection first so a PARTIAL selection becomes its own fully-contained run, then:
+ *   - if EVERY selected run is already inside a matching tag -> remove (split-out, not full unwrap),
+ *   - otherwise -> apply to all runs (Style.styleNodes, which reuses already-matching wrappers so a
+ *     MIXED selection becomes uniformly formatted).
+ * Markup is deterministic (e.g. strike -> <s>), unlike execCommand.
  */
 function toggleInline(matchTags: readonly string[], nodeName: string): boolean {
-  const rng = wrappedRange.create();
+  let rng = wrappedRange.create();
   if (!rng || rng.isCollapsed()) {
     return false; // collapsed-cursor formatting (storedMarks) is a later step
   }
-  const active = dom.ancestor(rng.sc, (n: Node) => matchTags.includes(n.nodeName)) as HTMLElement | null;
-  if (active) {
-    unwrapEl(active);
+  rng = rng.splitText();
+  const textNodes = rng.nodes(dom.isText, { fullyContains: true });
+  const allFormatted =
+    textNodes.length > 0 &&
+    textNodes.every((t) => dom.ancestor(t, (n: Node) => matchTags.includes(n.nodeName)) !== null);
+
+  if (allFormatted) {
+    removeInline(textNodes, matchTags);
+    // remove the empty <b>/<i>/... remnants the edge splits leave (e.g. `<b></b>hello<b></b>`)
+    const selector = matchTags.join(',');
+    const blocks = new Set<Element>();
+    for (const t of textNodes) {
+      const block = (dom.ancestor(t, (n: Node) => dom.isPara(n) || dom.isEditable(n)) ??
+        t.parentNode) as Element | null;
+      if (block) {
+        blocks.add(block);
+      }
+    }
+    for (const block of blocks) {
+      for (const el of Array.from(block.querySelectorAll(selector))) {
+        if ((el as HTMLElement).textContent === '') {
+          el.remove();
+        }
+      }
+    }
+    // reselect the (now unwrapped) text runs so active-state reflects removal
+    const firstT = textNodes[0];
+    const lastT = textNodes[textNodes.length - 1];
+    if (firstT && lastT && firstT.isConnected && lastT.isConnected) {
+      const r = document.createRange();
+      r.setStart(firstT, 0);
+      r.setEnd(lastT, dom.nodeLength(lastT));
+      selectRange(r);
+    }
     return true;
   }
+
   const nodes = style.styleNodes(rng, { nodeName });
   if (nodes.length > 0) {
     const first = nodes[0];
