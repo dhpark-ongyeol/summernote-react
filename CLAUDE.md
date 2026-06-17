@@ -4,33 +4,33 @@
 
 ## 프로젝트 개요
 
-**Summernote** — "Super simple WYSIWYG editor". **순수 jQuery 기반** WYSIWYG 에디터 라이브러리다. (디렉토리명이 `summernote-react`지만 React 래퍼가 아니다 — 업스트림 vanilla summernote의 fork/clone이며, npm 패키지명은 `summernote`다. 디렉토리명에 속지 말 것.)
+**`@eaeao/summernote-react` v1.0** — jQuery summernote를 **React + TypeScript 자체 엔진**으로 포팅한 **단일 npm 패키지**다. 엔진(구 `summernote/core`)과 React 바인딩이 한 패키지에 들어있고, 외부 editor/runtime 의존이 **0**이다. (디렉토리명 `summernote-react`. 업스트림 jQuery summernote의 fork였으나 v1.0에 레거시 소스를 전부 제거했다 — git 히스토리에만 존재.)
 
-- npm 패키지: `summernote` v0.9.1, MIT 라이선스, `type: module` (ESM)
-- 런타임 의존성: **jQuery 3.6.0 (peer, 번들에 포함 안 됨 — external)**
-- 단일 JS 아키텍처에서 **4개 테마 번들**(`lite`, `bs3`, `bs4`, `bs5`)을 생성
-- 소스의 버전 토큰은 `@@VERSION@@` ([src/js/summernote.js](src/js/summernote.js)) — 빌드 시 Vite 배너가 치환. 실제 semver는 [package.json](package.json)에만 있다.
+- npm 패키지: **`@eaeao/summernote-react`** v1.0.0, MIT, `type: module`. `publishConfig.access=public`.
+- 런타임 의존성 **0**. `react`/`react-dom`(>=18)은 **peerDependencies**. 엔진은 번들에 포함.
+- **execCommand 0 · jQuery 0**: 자체 Range 명령 + 구조적 상태 검출(결정적 마크업).
+- 4 테마(lite/bs3/bs4/bs5)는 **CSS 스킨**(per-instance, 공존). 아이콘은 공유 webfont.
 
 ## 기술 스택 & 빌드
 
-- **빌드**: Vite 5 + Rollup → 테마별 IIFE 번들 + 소스맵. jQuery는 external 처리.
-- **아이콘**: SVG(`src/font/icons/`) → `webfont`로 TTF/EOT/WOFF/WOFF2 + SCSS 맵 생성 (`prebuild` 훅)
-- **스타일**: SCSS (공통 `src/styles/summernote/*` + 테마별 오버라이드), PostCSS/autoprefixer/cssnano
-- **테스트**: Vitest 1.6 **브라우저 모드(Chrome headless, webdriverio + chromedriver)** — JSDOM 아님. range/selection/computed style을 실제 브라우저 semantic으로 검증.
-- **품질 게이트**: ESLint(`@babel/eslint-parser`, `eslint:recommended` + `chai-friendly` 플러그인, 2-space indent·semi 강제·`comma-dangle: always-multiline`), Prettier(single quote, 120 width, `trailingComma: all`), CI는 Node 18.x/20.x 매트릭스 + CodeQL.
-- **트랜스파일**: `@babel/preset-env`로 ES5 호환. `babel-plugin-module-resolver`로 `@` → `src/`.
+- **빌드**: `tsup`(esbuild) → 단일 dist **ESM + CJS + `.d.ts`**. `src/engine`은 `@engine`(esbuild alias)로 **번들에 포함**, external은 react/react-dom뿐.
+- **모듈 해석**: `@engine` = `src/engine/index.ts` (tsconfig `paths` + vitest alias + tsup esbuild alias 3중). chrome 코드는 엔진을 `@engine`으로 import.
+- **테스트**: **Vitest 3 브라우저 모드 + Playwright(chromium+webkit)** — JSDOM 아님. range/selection/computed-style을 실제 브라우저 semantic으로 검증. `test/setup.ts`(매처), `test/util.ts`(mount/dispatch).
+- **품질 게이트**(`yarn verify`): `check-no-jquery`(src/ 스캔, jQuery 0) + `check-no-runtime-deps`(루트 manifest, deps 0) + `tsc --noEmit` strict(+`exactOptionalPropertyTypes`). CI = `port-ci.yml`(gates → typecheck → chromium+webkit) + CodeQL.
+- **포맷**: Prettier(single quote, 120 width, `trailingComma: all`).
+- **릴리스**: changesets(`.changeset/`). `yarn version-packages` → `yarn release`(verify+build+publish).
 
 ### 명령어
 
 > 패키지 매니저는 **Yarn** (node-modules linker, [.yarnrc.yml](.yarnrc.yml)).
 
-> ⚠️ **v1.0(2026-06-18)에 레거시 jQuery 소스(`src/`·`public/`·`examples/`·레거시 빌드)를 전부 제거**했다. 프로젝트는 이제 `packages/`(core+react)의 순수 React+TS 모노레포다. 아래 일부 섹션은 **포팅의 출처가 된 레거시 아키텍처를 historical reference로** 기술한다(원본은 git 히스토리에 있음). 생성 산출물(46 로케일·icons.css·골든 코퍼스)은 커밋돼 있어 레거시 없이 자립한다.
+> ⚠️ **v1.0(2026-06-18)에 레거시 jQuery 소스(`src/js`·`public/`·`examples/`·레거시 빌드)를 전부 제거**하고 **모노레포를 단일 패키지 `@eaeao/summernote-react`로 통합**했다(엔진+React 한 패키지). 아래 일부 아키텍처 섹션은 **포팅의 출처가 된 레거시 jQuery 설계를 historical reference로** 기술한다(현재 코드는 [디렉토리 구조](#디렉토리-구조-v10--단일-패키지-eaeaosummernote-react) 참조; 레거시 원본은 git 히스토리). 생성 산출물(46 로케일·icons.css·골든 코퍼스)은 커밋돼 자립한다.
 
 | 명령 | 설명 |
 |---|---|
 | `yarn install` | 의존성 설치 |
-| `yarn verify` | jQuery-ban + zero-dep 게이트 + 양 패키지 typecheck |
-| `yarn build:packages` | core·react dual 빌드(ESM+CJS+.d.ts, tsup) |
+| `yarn verify` | jQuery-ban + zero-dep 게이트 + typecheck |
+| `yarn build` | 단일 dual 빌드(ESM+CJS+.d.ts, tsup — 엔진 번들 포함) |
 | `yarn test` | Vitest 전체 (chromium+webkit) — ⚠️ 무겁다, [[test-resource-policy]] |
 | `yarn test:watch` | Vitest watch |
 | `node_modules/.bin/vitest run <spec> --project=chromium` | **개발 중 권장**: 단일 spec, chromium 단일 엔진, 실행 후 프로세스 정리 |

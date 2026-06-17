@@ -1,6 +1,8 @@
 # Summernote → React + TypeScript 포팅 계획서
 
-> jQuery 기반 vanilla summernote(현 코드베이스, 루트 `CLAUDE.md` 참조)를 **외부 의존 0의 자체 엔진으로 React + TypeScript 화("react화")**하는 체계적 계획. summernote가 이미 원하는 동작을 잘 하므로 **엔진을 재발명하지 않고 보존·이식**한다. 13개 설계 에이전트(엔진-이식 3제안 + 심사 + 서브시스템 8 + 로드맵)의 종합.
+> ✅ **완료 (v1.0, 2026-06-18) — 이 문서는 착수 시점의 원래 계획(historical)이다.** 현재 상태·구조는 [STATUS.md](STATUS.md) 참조. **최종 산출물과의 차이**: 계획의 `@summernote/core`+`@summernote/react` **모노레포 2패키지**는 최종적으로 **단일 패키지 `@eaeao/summernote-react`** 로 통합됐다(엔진을 `@engine` alias로 번들 포함; 스코프는 사용자 npm 계정 `@eaeao`). 레거시 jQuery 소스는 v1.0에 제거(git 히스토리). 아래 본문의 `@summernote/*`·`packages/*`·Vite 등은 계획 당시 표기다.
+
+> jQuery 기반 vanilla summernote를 **외부 의존 0의 자체 엔진으로 React + TypeScript 화("react화")**하는 체계적 계획. summernote가 이미 원하는 동작을 잘 하므로 **엔진을 재발명하지 않고 보존·이식**한다. 13개 설계 에이전트(엔진-이식 3제안 + 심사 + 서브시스템 8 + 로드맵)의 종합.
 
 ## 0. 확정 제약 (사용자 결정, 2026-06-17)
 
