@@ -22,7 +22,7 @@ import {
 } from '@engine';
 import { useSummernote } from './useSummernote';
 import { Toolbar } from './toolbar/Toolbar';
-import { ChromeProvider, type ChromeValue, type ChromeUI } from './chrome/ChromeContext';
+import { ChromeProvider, type ChromeValue, type ChromeUI, type ImageUploadHandler } from './chrome/ChromeContext';
 import { LinkDialog, ImageDialog, VideoDialog, HelpDialog } from './chrome/dialogs';
 import { Codeview } from './chrome/Codeview';
 import { Statusbar } from './chrome/Statusbar';
@@ -70,6 +70,9 @@ export interface SummernoteEditorProps {
   theme?: 'lite' | 'bs3' | 'bs4' | 'bs5';
   /** locale (a LangPartial deep-merged over en-US), e.g. lang={locales['ko-KR']}. */
   lang?: LangPartial;
+  /** image-upload hook: receive the picked File(s) and insert your uploaded URL(s) instead of the
+   *  default base64 embed. `onImageUpload={(files, insert) => upload(files[0]).then(u => insert(u))}` */
+  onImageUpload?: ImageUploadHandler;
   className?: string;
 }
 
@@ -94,6 +97,7 @@ export const SummernoteEditor = forwardRef<SummernoteEditorHandle, SummernoteEdi
     plugins,
     theme,
     lang,
+    onImageUpload,
     className,
   } = props;
   const lastEmitted = useRef<string | null>(null);
@@ -244,8 +248,16 @@ export const SummernoteEditor = forwardRef<SummernoteEditorHandle, SummernoteEdi
   const resolvedLang = useMemo(() => (lang ? resolveLang(lang) : langEnUS), [lang]);
 
   const chrome = useMemo<ChromeValue>(
-    () => ({ core, state, lang: resolvedLang, options: chromeOptions, ui, codeviewActive: codeview }),
-    [core, state, resolvedLang, chromeOptions, ui, codeview],
+    () => ({
+      core,
+      state,
+      lang: resolvedLang,
+      options: chromeOptions,
+      ui,
+      codeviewActive: codeview,
+      ...(onImageUpload ? { onImageUpload } : {}),
+    }),
+    [core, state, resolvedLang, chromeOptions, ui, codeview, onImageUpload],
   );
 
   const rootClass = [

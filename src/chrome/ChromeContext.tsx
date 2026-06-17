@@ -13,6 +13,15 @@ export interface ChromeUI {
   toggleCodeview(): void;
 }
 
+/**
+ * Image-upload hook. Called once per picked file instead of the editor embedding it as a base64 data
+ * URL. Upload the file however you like (your server, S3, …) and return — or resolve to — the image
+ * `src` to insert (a hosted URL, or a base64 data URL). While the promise is pending the editor shows
+ * a loading spinner in place; on rejection the placeholder is removed. Without a handler, files are
+ * embedded as base64.
+ */
+export type ImageUploadHandler = (file: File) => string | Promise<string>;
+
 /** everything the chrome components need, provided once at the editor root (no prop drilling). */
 export interface ChromeValue {
   readonly core: EditorCore | null;
@@ -23,6 +32,8 @@ export interface ChromeValue {
   readonly ui: Partial<ChromeUI>;
   /** true while the codeview textarea is showing — the toolbar disables (except codeview). */
   readonly codeviewActive: boolean;
+  /** optional image-upload hook — when set, picked files go here instead of being embedded base64. */
+  readonly onImageUpload?: ImageUploadHandler;
 }
 
 const ChromeContext = createContext<ChromeValue | null>(null);

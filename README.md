@@ -72,7 +72,23 @@ import { useSummernote, createEditorCore } from '@eaeao/summernote-react';
 | `toolbar` | `[group, names][]` config (defaults to the summernote default) |
 | `theme` | `'lite'` (default) `'bs3'` `'bs4'` `'bs5'` — per-instance; themes coexist |
 | `lang` | a locale: `lang={locales['ko-KR']}` |
+| `onImageUpload(file)` | upload a picked image yourself; return/resolve the `src` to insert (else base64) |
 | `airMode`, `placeholder`, `disableResize`, `plugins` | see types |
+
+## Image upload
+
+By default a picked image is embedded as a base64 data URL. Provide `onImageUpload` to upload it your
+way (your server, S3, …) and insert the returned URL — a spinner shows in place while the promise
+resolves (the file picker is single-file):
+
+```tsx
+<SummernoteEditor
+  onImageUpload={async (file) => {
+    const url = await uploadToServer(file); // your API
+    return url;                             // (or a base64 string) — a spinner shows until this resolves
+  }}
+/>
+```
 
 ## Themes & i18n
 

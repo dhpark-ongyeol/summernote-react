@@ -71,7 +71,7 @@ export function LinkDialog({ onClose }: DialogProps): JSX.Element {
 
 /** Insert Image dialog — file upload (-> dataURL) or URL. */
 export function ImageDialog({ onClose }: DialogProps): JSX.Element {
-  const { core, lang } = useChrome();
+  const { core, lang, onImageUpload } = useChrome();
   const [url, setUrl] = useState('');
   const fileRef = useRef<HTMLInputElement | null>(null);
 
@@ -84,16 +84,24 @@ export function ImageDialog({ onClose }: DialogProps): JSX.Element {
     onClose();
   };
 
+  const insertImage = (src: string, filename?: string): void => {
+    core?.restoreRange();
+    core?.command('insertImage', src, filename);
+  };
+
   const onFiles = (files: FileList | null): void => {
-    if (!files || files.length === 0) {
+    const file = files?.[0];
+    if (!file) {
       return;
     }
     core?.restoreRange();
-    for (const file of Array.from(files)) {
+    if (onImageUpload) {
+      // run the consumer's async uploader — the engine shows a spinner, then inserts the returned src
+      core?.insertImageUpload(file, onImageUpload);
+    } else {
+      // default: embed the file as a base64 data URL
       const reader = new FileReader();
-      reader.onload = (): void => {
-        core?.command('insertImage', String(reader.result), file.name);
-      };
+      reader.onload = (): void => insertImage(String(reader.result), file.name);
       reader.readAsDataURL(file);
     }
     onClose();
@@ -117,7 +125,6 @@ export function ImageDialog({ onClose }: DialogProps): JSX.Element {
           className="note-image-input note-input"
           type="file"
           accept="image/*"
-          multiple
           onChange={(e) => onFiles(e.target.files)}
         />
       </div>

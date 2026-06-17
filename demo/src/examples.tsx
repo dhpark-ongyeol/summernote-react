@@ -345,22 +345,38 @@ function Placeholder(): JSX.Element {
 }
 
 function ImageUpload(): JSX.Element {
-  const [html, setHtml] = useState('<p>Click the 🖼️ picture button in the toolbar.</p>');
+  const [html, setHtml] = useState('<p>Click the 🖼️ picture button and choose an image.</p>');
+  const [useHook, setUseHook] = useState(true);
+  // Stand-in for a real uploader: POST the file to your server / S3 and return the hosted URL.
+  // Returning a Promise makes the editor show a spinner until it resolves; here we mint a local
+  // object URL (a blob: URL, NOT base64) after a delay to mimic the round-trip.
+  const fakeUpload = (file: File): Promise<string> =>
+    new Promise((resolve) => window.setTimeout(() => resolve(URL.createObjectURL(file)), 1200));
   return (
     <div className="stack">
       <div className="note-tip">
-        🖼️ Click the <b>picture</b> toolbar button → choose a file. It&apos;s read as a data-URL and inserted inline (no
-        server). Or paste an image URL.
+        🖼️ Click the <b>picture</b> button → choose a file. With <code>onImageUpload</code> a spinner shows while your
+        uploader runs, then the returned <b>URL</b> is inserted; without it, the file is embedded as a base64 data URL.
+      </div>
+      <div className="card card-pad row">
+        <label className="switch">
+          <input type="checkbox" checked={useHook} onChange={(e) => setUseHook(e.target.checked)} />
+          use <code>onImageUpload</code> (insert a URL, not base64)
+        </label>
       </div>
       <EditorCard
-        code={`// the picture dialog reads the file with FileReader -> data: URL -> <img>
-<SummernoteEditor onChange={setHtml} />`}
+        code={`<SummernoteEditor
+  onImageUpload={async (file) => {
+    const url = await uploadToServer(file); // your API
+    return url;                             // (or a base64 string) — a spinner shows until this resolves
+  }}
+/>`}
       >
-        <SummernoteEditor value={html} onChange={setHtml} />
+        <SummernoteEditor value={html} onChange={setHtml} {...(useHook ? { onImageUpload: fakeUpload } : {})} />
       </EditorCard>
       <div className="card">
-        <div className="label">resulting HTML</div>
-        <pre className="output">{html.length > 400 ? html.slice(0, 400) + ' …(truncated data URL)' : html}</pre>
+        <div className="label">resulting HTML (note the img src)</div>
+        <pre className="output">{html.length > 400 ? html.slice(0, 400) + ' …(truncated)' : html}</pre>
       </div>
     </div>
   );
@@ -373,7 +389,7 @@ export const EXAMPLES: Example[] = [
   { id: 'air-mode', emoji: '✈️', title: 'Air mode', group: 'Features', blurb: 'No fixed toolbar — a floating toolbar appears at the selection (below it on touch).', Component: AirModeEx },
   { id: 'themes', emoji: '🎨', title: 'Themes', group: 'Features', blurb: 'lite / bs3 / bs4 / bs5 as CSS skins. Per-instance — editors with different themes coexist.', Component: Themes },
   { id: 'localization', emoji: '🌐', title: 'Localization', group: 'Features', blurb: '46 bundled locales, deep-merged over en-US. Pass one via the lang prop.', Component: Localization },
-  { id: 'insert-image', emoji: '🖼️', title: 'Insert image', group: 'Features', blurb: 'The picture dialog inserts a file as a data-URL (or an image URL) — no server needed.', Component: ImageUpload },
+  { id: 'insert-image', emoji: '🖼️', title: 'Image upload', group: 'Features', blurb: 'onImageUpload hook: send picked files to your uploader and insert the returned URL — or fall back to base64.', Component: ImageUpload },
   { id: 'multiple-editors', emoji: '🧩', title: 'Multiple editors', group: 'Recipes', blurb: 'Several independent editors on one page, each with its own theme and state.', Component: Multiple },
   { id: 'click-to-edit', emoji: '👆', title: 'Click to edit', group: 'Recipes', blurb: 'Show rendered content; swap to the editor on Edit, back to the view on Save.', Component: ClickToEdit },
   { id: 'custom-toolbar', emoji: '🧰', title: 'Custom toolbar', group: 'Recipes', blurb: 'The toolbar is just a [group, names][] config — trim it down or build your own.', Component: CustomToolbar },

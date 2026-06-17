@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { render, cleanup, fireEvent } from '@testing-library/react';
+import { render, cleanup, fireEvent, act } from '@testing-library/react';
 import { SummernoteEditor } from '../src/SummernoteEditor';
 
 afterEach(() => {
@@ -48,6 +48,45 @@ describe('Dialogs (link/image/video/help, multi-engine)', () => {
     const img = editable.querySelector('img') as HTMLImageElement;
     expect(img).not.toBeNull();
     expect(img.getAttribute('src')).toBe('https://example.com/a.png');
+  });
+
+  it('onImageUpload shows a spinner, then inserts the resolved URL (single file)', async () => {
+    let received: string | null = null;
+    let resolveUpload!: (url: string) => void;
+    const onImageUpload = (file: File): Promise<string> => {
+      received = file.name;
+      return new Promise<string>((res) => {
+        resolveUpload = res;
+      });
+    };
+    const { container, getByRole } = render(<SummernoteEditor defaultValue="<p>x</p>" onImageUpload={onImageUpload} />);
+    const editable = container.querySelector('.note-editable') as HTMLElement;
+    selectContents(editable.querySelector('p') as HTMLElement);
+
+    fireEvent.click(getByRole('button', { name: 'Picture' }));
+    const fileInput = container.querySelector('.note-image-input') as HTMLInputElement;
+    expect(fileInput.multiple).toBe(false); // single-file only
+    const dt = new DataTransfer();
+    dt.items.add(new File(['data'], 'photo.png', { type: 'image/png' }));
+    fileInput.files = dt.files;
+    await act(async () => {
+      fireEvent.change(fileInput);
+    });
+
+    // while the upload is pending, a spinner placeholder (no src) is shown — not a base64 embed
+    expect(received).toBe('photo.png');
+    const spinner = editable.querySelector('img.note-image-uploading') as HTMLImageElement;
+    expect(spinner).not.toBeNull();
+    expect(spinner.getAttribute('src')).toBeNull();
+
+    // resolving the upload swaps the spinner for the hosted image
+    await act(async () => {
+      resolveUpload('https://cdn.example.com/photo.png');
+    });
+    const img = editable.querySelector('img') as HTMLImageElement;
+    expect(img.getAttribute('src')).toBe('https://cdn.example.com/photo.png');
+    expect(img.classList.contains('note-image-uploading')).toBe(false);
+    expect(img.getAttribute('data-filename')).toBe('photo.png');
   });
 
   it('Video dialog inserts a YouTube embed', () => {

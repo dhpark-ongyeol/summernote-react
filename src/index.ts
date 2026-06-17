@@ -39,4 +39,4 @@ export { PopoverHost } from './chrome/PopoverHost';
 export { AirPopover } from './chrome/AirPopover';
 export { AirPopoverHost } from './chrome/AirPopoverHost';
 export { ChromeProvider, useChrome, useCommand } from './chrome/ChromeContext';
-export type { ChromeValue, ChromeUI, ChromeOptions } from './chrome/ChromeContext';
+export type { ChromeValue, ChromeUI, ChromeOptions, ImageUploadHandler } from './chrome/ChromeContext';

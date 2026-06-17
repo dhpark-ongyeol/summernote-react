@@ -842,6 +842,51 @@ export class EditorCore {
     this.afterCommand();
   }
 
+  /**
+   * Insert a loading spinner at the current selection, run the async upload `handler`, then swap in
+   * the resolved image src (a hosted URL or a base64 data URL); on rejection the placeholder is
+   * removed. The spinner is not recorded in history or emitted via onChange until it resolves, so a
+   * transient placeholder never leaks into the saved value or the undo stack.
+   */
+  insertImageUpload(file: File, handler: (file: File) => string | Promise<string>): void {
+    let rng = wrappedRange.create();
+    if (!rng || !this.editable.contains(rng.sc)) {
+      // nothing selected / owned — default to a caret at the end of the editor
+      const end = document.createRange();
+      end.selectNodeContents(this.editable);
+      end.collapse(false);
+      selectRange(end);
+      rng = wrappedRange.create();
+    }
+    if (!rng) {
+      return;
+    }
+    const img = dom.create('IMG') as HTMLImageElement;
+    img.className = 'note-image-uploading';
+    if (file.name) {
+      img.setAttribute('data-filename', file.name);
+    }
+    rng.insertNode(img);
+    wrappedRange.createFromNodeAfter(img).select();
+    this.notifyState(); // show the spinner + move the caret past it (not yet a change/undo step)
+    Promise.resolve()
+      .then(() => handler(file))
+      .then((src) => {
+        if (!img.isConnected) {
+          return; // undone / re-seeded while uploading
+        }
+        img.setAttribute('src', String(src));
+        img.removeAttribute('class');
+        this.afterCommand(); // commit: one undo step + onChange with the loaded image
+      })
+      .catch(() => {
+        if (img.isConnected) {
+          img.remove();
+          this.notifyState();
+        }
+      });
+  }
+
   isComposing(): boolean {
     return this.composing;
   }
