@@ -14,6 +14,7 @@
 | 공개 API | 프레임워크 비종속 헤드리스 코어 + `useSummernote()` 훅 + controlled `<SummernoteEditor value onChange options theme>` |
 | React 경계 | React는 chrome만. editable contentEditable은 엔진이 imperative 소유(**uncontrolled ref, React children 0**) — React-vs-contentEditable 충돌 구조적 종결 |
 | v1 범위 | **완전 패리티** — 4테마(lite/bs3/bs4/bs5) + 22모듈 전 기능 + 플러그인 + i18n 50+ 로케일 |
+| 브라우저 지원 | **Chromium 계열 + Safari(데스크톱 WebKit) + 모바일(iOS Safari·안드로이드 크롬·삼성인터넷) 모두 완벽 동작** (2026-06-17). → Chrome-only 테스트 게이트 폐기. **§13**이 이 요구로 §2/§3/§7/§9/§10/§11 관련 항목을 보강·갱신 |
 
 > 이전 ProseMirror 기반 초판은 **폐기**(외부 의존 사용 — 본 방향과 배치).
 
@@ -52,11 +53,13 @@
 **리스크 관리 전략 (계획의 중심축)**:
 1. **골든 코퍼스 우선**(Phase 0): 레거시 빌드를 기존 spec + 인라인-토글/부분-중첩-혼합 선택 엣지케이스로 돌려 출력을 `test/golden/*.json`(불변 oracle)로 동결 — **자체 명령 작성 전에**.
 2. **결정적 마크업 재기준선**: execCommand 출력은 본래 **브라우저마다 비결정적**(`<b>` vs `<strong>` vs `<span>`)이라 바이트 일치가 불가능·무의미. 자체 명령은 **결정적 마크업**을 내므로, 인라인-포맷 골든은 **동작/구조 동등성 + 결정적 마크업**으로 재기준선(의도적 품질 개선으로 release-note 명시). 구조적 비교(`equalsIgnoreCase`/structural normalize)로 게이트.
-3. **명령별 점진 + 게이트**: 각 자체 명령은 실 Chrome Vitest로 골든 대조 통과 후 머지. 단일 Command 레이어를 거치므로 contained change.
+3. **명령별 점진 + 게이트**: 각 자체 명령은 **Chromium + WebKit** Vitest로 골든 대조 통과 후 머지. 단일 Command 레이어를 거치므로 contained change.
+4. **리스크 티어 단계화**(원자적 Phase-2 deliverable 아님): **Tier A**(unlink→unwrap, justify→stylePara, color→fontStyling — 이미 자체-surgery 경로, 최저위험) → **Tier B**(bold/italic/underline/strike/sub/sup→toggleInline, 부분/중첩/혼합 선택 명시 처리) → **Tier C**(formatBlock — toggle-vs-nest·no-outdent 시맨틱 정의 필요; removeFormat — 혼합선택 unwrap 핸드롤, 최고위험). 각 티어를 chromium+webkit 양쪽 caret+markup 코퍼스로 게이트. (자세히 §13.5)
+5. **누락분**: `TablePopover.js:48`의 `execCommand('enableInlineTableEditing', false)`는 콘텐츠 편집이 아니라 **WebKit/Gecko 네이티브 표-리사이즈 그립 억제**용 — 명령 인벤토리에 **suppression 항목**으로 재추가(CSS/`-webkit-user-modify`). 빠뜨리면 Safari/Firefox에서 네이티브 그립이 자체 TablePopover와 중복. (`styleWithCSS`는 자체 명령이 canonical 마크업을 내면 자연 소멸 — free win.)
 
 ## 3. React 경계 + 상태 브리지
 
-- `<SummernoteEditor>`는 chrome React 트리 + **단 하나의 leaf** `<div className="note-editable" contentEditable suppressContentEditableWarning ref={editableRef}>`(React children 0). 마운트(`useLayoutEffect`, StrictMode 멱등)에서 `createEditorCore(ref, options)`가 `Editor.initialize` 등가 실행(editable seed, 네이티브 keydown/keyup/input/paste/composition 바인딩 — `inputEventName` 디바운스 + `isLimited(0)`+snapshot 조합 가드를 네이티브 composition 이벤트로 이식, first undo). 이후 엔진이 editable을 imperative하게 변경 — **React reconciler는 구조적으로 배제**(커서 전쟁 종결).
+- `<SummernoteEditor>`는 chrome React 트리 + **단 하나의 leaf** `<div className="note-editable" contentEditable suppressContentEditableWarning ref={editableRef}>`(React children 0). 마운트(`useLayoutEffect`, StrictMode 멱등)에서 `createEditorCore(ref, options)`가 `Editor.initialize` 등가 실행(editable seed, 네이티브 keydown/keyup/input/paste/composition 바인딩 — **composition 상태머신**(observe-only window + settle delay + compositionend 후 reconcile — §13.2; ⚠️ 레거시의 innerHTML 재seed 가드는 모바일 한글 깨짐이라 **이식 금지·폐기**) + inputType 기반 입력 검출, first undo). 이후 엔진이 editable을 imperative하게 변경 — **React reconciler는 구조적으로 배제**(커서 전쟁 종결).
 - **상태 브리지**: 엔진이 keyup/mouseup/input/change + codeview/fullscreen/disable 전환마다 타입드 불변 `EditorState`(`{marks, fontName, fontSize, lineHeight, listStyle, paraAlign, isOnAnchor, anchorHref, isOnCell, isDisabled, isCodeview, isFullscreen, canUndo, canRedo}`) 계산 → EventBus 발행. chrome은 `useSyncExternalStore(bus.subscribe, core.getState)`로 소비(`active={state.marks.bold}`). 재렌더는 **chrome 트리만** 건드림(editable host엔 React children 0이라 contentEditable selection 불변). 구조적 동등성 bail로 thrash 방지.
 - 다이얼로그는 이식된 `saveRange()`/`restoreRange()`(React `<input>` 포커스 시 editable selection 소실 — 현 계약 동일).
 
@@ -147,13 +150,13 @@ root: tsconfig.base.json, vitest.config.ts(browser mode, src 별칭), .changeset
 - **Day 1-2**: Yarn workspaces(Node≥17, jquery/bootstrap/less/mocha 런타임 의존 제거), `@summernote/core`·`react` stub(Vite lib es+cjs + vite-plugin-dts로 ESM+CJS+.d.ts 증명), tsconfig.base + project references.
 - **Day 2-3**: `vitest.config.js`→`.ts`(browser mode 보존, `@summernote/*`를 **TS 소스**에 별칭 — dist 아님), `test/util.ts`(h/mount/dispatchKey/Input/Paste/Composition), `test/setup.ts`(`equalsIgnoreCase` IE 분기 제거, `equalsStyle` jQuery-free 재구현).
 - **Day 3-5**: 골든 코퍼스 recorder를 **태그된 레거시 빌드**에 대해 구축. `test/matrix.ts`(initialHTML × command/keystroke × options) — Editor/Buttons/Codeview/LinkDialog/VideoDialog/HintPopover/Context spec + **인라인 토글/justify/color/backColor/unlink/formatBlock의 부분·중첩·혼합 선택 엣지케이스**. 출력(editable.innerHTML, Style.current, codeview.sync, history snapshot, code()) → `test/golden/*.json` 동결 + freeze-guard.
-- **Day 5-6**: CI — ESLint `no-restricted-imports(jquery)`/`no-restricted-syntax($)`(editor 패키지 한정), `check-no-jquery.sh`, zero-third-party-editor-dep 가드. 필수 PR 체크(Tier-1/2/3 실 Chrome).
+- **Day 5-6**: CI — ESLint `no-restricted-imports(jquery)`/`no-restricted-syntax($)`(editor 패키지 한정), `check-no-jquery.sh`, zero-third-party-editor-dep 가드. 필수 PR 체크(Tier-1/2 **chromium+webkit** + emulated-mobile smoke — §13.4).
 - **Day 6-9**: `core/func·lists·env·key.ts` 이식(`$` 제거; `rect2bnd` 네이티브 scroll 수학 + ac5460e0 guard; `$.inArray`→`includes`; IE `inputEventName`은 `isMSIE` 뒤 격리). `core/dom.ts` 1:1(멤버명 전부, classList/createElement/forEach + parseHTML/closest). `test/base/core/{dom,func,lists,key}.spec.js`→`.spec.ts` 그대로 이식 green.
 - **Day 9-12**: `core/range.ts` 1:1(`WrappedRange` 클래스 `sc/so/ec/eo`+`normalize()` verbatim; IE TextRange는 `isW3CRangeSupport` 뒤 격리; `pasteHTML` reversed-insert + setEnd guard 9a9e01d3 verbatim). `async.ts`(Deferred→Promise) + 최소 EventBus. `range.spec`→`.ts` 이식 + WrappedRange 필드/bookmark round-trip anchor.
-- **Day 12-14**: Phase-1 thin slice — 최소 `EditorCore`(editable seed, History, `Style.current` bold-state, **자체 명령**으로 inline-toggle + insertText through before/afterCommand, 네이티브 이벤트 바인딩 + composition 가드). `useSummernote()` + 최소 `<SummernoteEditor>`(uncontrolled `.note-editable`, React children 0, `useSyncExternalStore`, bold 버튼 1). Tier-3(reconciler-exclusion, StrictMode 멱등, IME undo, no-clobber). **v0.1 게이트.**
+- **Day 12-14**: Phase-1 thin slice — 최소 `EditorCore`(editable seed, History, `Style.current` bold-state, **자체 명령**으로 inline-toggle + insertText through before/afterCommand, 네이티브 이벤트 바인딩 + **composition 상태머신**(§13.2)). `useSummernote()` + 최소 `<SummernoteEditor>`(uncontrolled `.note-editable`, React children 0, `useSyncExternalStore`, bold 버튼 1). Tier-3(reconciler-exclusion, StrictMode 멱등, IME undo, no-clobber). **v0.1 게이트(chromium+webkit).**
 
 ## 11. 비준된 결정 + 의도적 divergence (release-note 대상)
-- ✅ **Lens C 전면 TS 재구조화**(타입드 command + EventBus). ✅ **execCommand v1 완전 제거**(자체 Range 명령) — 인라인-포맷 마크업은 **결정적**(레거시 비결정적 execCommand 출력과 다름, 의도적 개선). ✅ **per-instance theme**(전역 `$.summernote.ui` 폐기). ✅ **콜백이 editable 요소를 명시적으로 받음**(`this`=raw-DOM 폐기). ✅ **Bootstrap JS 제거**(lite 동작으로 통일). ✅ **레거시 IE 미지원**(Chrome-only 패리티 게이트, TextRange 격리). ✅ **controlled 계약**: `value`/`onChange`만 controlled, 외부·non-self-origin value 변경시에만 setHTML(caret 보호).
+- ✅ **Lens C 전면 TS 재구조화**(타입드 command + EventBus). ✅ **execCommand v1 완전 제거**(자체 Range 명령) — 인라인-포맷 마크업은 **결정적**(레거시 비결정적 execCommand 출력과 다름, 의도적 개선). ✅ **per-instance theme**(전역 `$.summernote.ui` 폐기). ✅ **콜백이 editable 요소를 명시적으로 받음**(`this`=raw-DOM 폐기). ✅ **Bootstrap JS 제거**(lite 동작으로 통일). ✅ **레거시 IE 미지원**(TextRange 격리). ✅ **테스트 게이트 = Chromium+Safari/WebKit 자동 + 실기기/수동-IME 릴리스 게이트**(Chrome-only 폐기). ✅ **controlled 계약**: `value`/`onChange`만 controlled, 외부·non-self-origin value 변경 + **non-composing**일 때만 setHTML(caret 보호). ✅ **모바일 air/선택 툴바는 선택 영역 아래 배치**(OS 콜아웃 충돌 회피 — 데스크톱과 의도적 divergence). ✅ **composition은 observe-only** — autoReplace/autoLink/hint/placeholder는 compositionend 후 처리(레거시 데스크톱 대비 타이밍 변경). ✅ **EditContext는 post-v1 Chromium 전용 enhancement**(v1은 contentEditable+Range+beforeinput).
 - 마이그레이션: 기존 UMD 플러그인은 `definePlugin` 타입드 API로 이전(전역 `$.summernote.dom/ui`→per-instance import). 가이드 제공.
 
 ## 12. 미해결 질문 (착수 직후 spike로 해소)
@@ -162,5 +165,64 @@ root: tsconfig.base.json, vitest.config.ts(browser mode, src 별칭), .changeset
 - `History` innerHTML-per-undo 메모리 프로파일이 v1 허용인가(대용량 문서)? 권고: v1 verbatim, post-v1 재검토.
 - Deferred→Promise 다이얼로그 상태머신(reject-on-hidden-while-pending) — 명시적 settled 플래그 + exactly-once resolve/reject 테스트.
 
+## 13. 크로스브라우저 / 모바일 지원 (Chromium · Safari/WebKit · iOS Safari · Android Chrome · Samsung Internet)
+
+> 6개 전문 에이전트(WebKit·모바일 IME·터치·CI·execCommand 영향) 리서치+소스검증 종합. **§2/§3/§7/§9/§10/§11의 관련 항목을 보강·갱신**한다.
+
+**판정 (조건부 가능)**: 현 아키텍처(contentEditable + 자체 Range surgery + 구조적 검출, **EditContext 미사용** — Chromium 전용이라 크로스브라우저 불가)가 유일한 크로스브라우저 토대로 이미 옳다. 단 3개 필수 변경: ①Chrome-only 게이트 폐기 → Phase 1부터 WebKit 동시 자동화 + 실기기/수동-IME 릴리스 게이트 ②"isLimited+snapshot composition hack 이식" 폐기 → composition 상태머신 ③`env.js` 엔진 오분류 재설계. **execCommand v1 제거는 Safari+모바일에서 오히려 더 옳다**(execCommand 출력이 바로 그 엔진들에서 비결정적, undo 이점은 자체 History라 무의미) — 단 §2의 Tier A/B/C 단계화 필수.
+
+### 13.1 env / 엔진 (크로스브라우저 정합)
+- **`env.ts` 재설계**(verbatim 복사 금지): 현 `env.js`는 엔진 오분류 — `isWebkit`이 Chrome에서 true(Blink UA에 'AppleWebKit' 잔존), `isChrome`이 Chromium Edge에서 true, iOS/Android/Samsung 구별 불가. → **엔진 정확 플래그**(`isBlink`/`isAppleWebKit`/`isSafari`/`isIOS`(iPadOS desktop-class는 `maxTouchPoints>1 && MacIntel`)/`isAndroid`/`isSamsungInternet`('SamsungBrowser'), 'Edg/' discriminator) + **feature-detect 플래그**(`PointerEvent`/`visualViewport`/`navigator.virtualKeyboard`/`matchMedia('(pointer:coarse)')`/`maxTouchPoints`). **모든 터치/엔진 분기는 feature-detect로** — `isSafari`/`isChrome`로 분기 금지. navigator 주입 seam(테스트가 실제 분기 통과).
+- **Range 수명**: 네이티브 selection을 `WrappedRange`로 읽을 때 즉시 `cloneRange()` — Safari 17 live-range 회귀(`getRangeAt`가 DOM surgery 중 변형) 무력화. 명령 후 selection **명시 재설정**(`bookmark`/`select`), 이전 Range 객체 생존 가정 금지(WebKit/iOS는 교체된 텍스트노드 바인딩 Range 폐기).
+- **빈 span caret**: 현재 `Editor.fontStyling`에만 있는 `ZERO_WIDTH_NBSP` bogus-content + 명시 re-select 패턴을 **모든 인라인 명령(toggleInline/fontStyling/color) 공유 헬퍼로 일반화** — WebKit은 빈 styled span에서 caret을 인접 텍스트노드로 ejection. 없으면 Safari에서 collapsed-caret bold가 span **밖**에 타이핑됨.
+- **구조적 상태 검출**(queryCommandState 대체): caret/선택에서 `listAncestor` 태그 검사(b/strong, i/em, u, s, sub, sup) + span-style는 `getComputedStyle`. **bold 임계 명시**(`bold`/`bolder` OR 숫자 ≥600) — WebKit은 ≥600을 bold 취급, 500/600 gray zone이라 임계 없으면 active 점이 Safari-vs-Chrome 깜빡임. Firefox try/catch + WebKit queryCommand looseness 동시 제거.
+- **color/font 정규화 seam**(단일 `readStyle()`): 모든 색 직렬화(rgb/rgba **+ lab/lch/oklab/oklch/color()** — 모던 색공간은 rgb()로 직렬화 안 됨) canonical 변환 후 swatch 매칭; font-family 대소문자·인용 무시 비교(WebKit 인용 상이); `node.style.fontSize` override 유지(computed는 WebKit에서 항상 px).
+- WebKit caret-안정/빈-요소 workaround는 **단일 `isAppleWebKit` 가드 모듈**에 격리(IE TextRange 격리와 동형 — Safari 26.x 수정 착지 시 제거 가능). blur·다이얼로그 open 시 진행중 composition 강제 종료(WebKit 164369: blur 중 compositionend 미발화 → isComposing stuck).
+
+### 13.2 IME (모바일 최대 난제 — 한글/CJK)
+- **레거시 hack 폐기**: `History.applySnapshot`의 매 input innerHTML 전체 재seed는 **조합 중 한글 drop/dup/자모분리** → 삭제.
+- **composition 상태머신**: `compositionstart/update/end` 바인딩, `isComposing`+`compositionEndedAt`, `core.isComposing()`. 조합~settle 사이 editable **observe-only** — DOM 쓰는 모든 경로(History snapshot, controlled setHTML, normalize, codeview sync, autoReplace/autoLink, hint, placeholder)가 early-return. History: 조합 시작에 **1 undo 체크포인트**, 중간 0, compositionend에 1 reconcile(maxTextLength는 **커밋된 결과만** 트림 — CJK 중간 문자열이 더 길다).
+- **inputType 기반 검출(keyCode 아님)**: Android Chrome/Samsung은 거의 모든 키에 `keyCode 229`, `key==='Unidentified'`, Backspace는 keydown 미발화 — keyCode 경로 전부 **Android에서 무력**. `insertText/insertParagraph/insertLineBreak/deleteContentBackward/…/insertCompositionText`로 매핑. keydown은 하드웨어 단축키만(`if (e.isComposing || e.keyCode===229) return;`, `e.key` 사용).
+- **iOS 한글 fallback(가장 중요·가장 quirky)**: iOS Safari 2벌식은 종종 **composition 이벤트 0**(isComposing false), `deleteContentBackward`+단일-CJK `insertText` 스트림으로 조립. compositionstart/end-only 게이트는 한글에서 무성 실패 → **input-pattern 휴리스틱**으로 동일 observe-only 진입. preventDefault 금지, DOM에서 reconcile.
+- **settle window** ~100ms(iOS/WebKit 한정 게이트 — 데스크톱 lag 회피): compositionend 후 구조적 rewrite/controlled-sync/normalize 지연 + Enter 등 keydown 구조 op 차단(iOS compositionend-vs-keydown racy ordering로 Enter 유실 회피).
+- **reconcile-don't-overwrite**: compositionend(+ autocorrect `insertReplacementText`, iOS dictation — composition 이벤트 0, 명령 파이프라인 우회) 후 **브라우저가 만든 DOM에서 모델 도출** + 1 History step. "모든 변경이 타입드 Command를 통한다"는 IME/autocorrect/dictation엔 거짓 — composition 중 before/afterCommand+recordUndo 억제.
+- **controlled hard-block**: `setHTML`을 `!isComposing && (now - compositionEndedAt > SETTLE)` 뒤로 게이트 → §3 caret-clobber 가드를 composition 게이트로 강화. autocorrect는 user-configurable·기본 ON(끄면 churn↓이나 UX↓ — opt-out 문서화).
+
+### 13.3 터치 / 모바일 UX
+- **드래그를 Pointer Events로**(헤드리스 서비스 — 지오메트리가 엔진): `services/handle.ts`(8-핸들 이미지 리사이즈, 현재 mouse-only라 **모바일 전무**), `services/statusbar.ts`. `pointerdown`에 `setPointerCapture`, 캡처 요소에서 `pointermove/up/cancel`(document 리스너 X), **`pointercancel`에서도 상태 정리**(scroll/zoom 제스처 탈취). 핸들에 `touch-action:none`, 툴바/버튼에 `touch-action:manipulation`(300ms 탭 지연 제거), editable host는 `auto`.
+- **air mode 트리거**(터치엔 mouseup 없음): 엔진에 debounce(~50-100ms) `document` `selectionchange` — air 트리거 겸 EditorState selection 소스, chrome 구독 전 EventBus 연결.
+- **팝오버는 선택 영역 아래**(visual-viewport 공간 `getClientRects()`): OS 네이티브 선택 메뉴가 3개 모바일 모두 선택 **위**라 충돌(Gutenberg #35447). 키보드 가림 시 키보드 위 dock fallback. **의도적 divergence**(§11).
+- **visualViewport 좌표계**: `AirPopover`의 `pageX/Y`·`Toolbar.followScroll`의 `position:fixed`+`window.scroll`는 소프트 키보드 축소 viewport 미추적(iOS는 fixed가 layout viewport 기준). `getBoundingClientRect()` + `visualViewport.offsetLeft/Top`, `visualViewport` resize/scroll에 재계산.
+- **키보드-aware 툴바 dock**: baseline=`visualViewport`(크로스브라우저), Chromium enhancement=`navigator.virtualKeyboard.overlaysContent` + `env(keyboard-inset-height)`(VirtualKeyboard API는 Chromium 전용=Android Chrome+Samsung; iOS는 없음). `rAF` 재배치 + dismiss 후 reconcile read(iOS 26 offsetTop 미복원 회귀).
+- AirPopover/TablePopover hidable 가드 mousedown/up→pointerdown/up. chrome UI에 `-webkit-touch-callout:none`+controlled `user-select`(editable 콘텐츠엔 X). 리사이즈 중 핸들 요소 re-render 금지(setPointerCapture 유실).
+
+### 13.4 테스트 매트릭스 / CI (Chrome-only 폐기)
+- **`vitest.config.ts` = Playwright provider + instances** `[{chromium},{webkit}]`(legacy webdriverio+chromedriver는 멀티엔진 개념 0). win32/Linux CI headless WebKit 유일 경로 = Playwright 번들 webkit. **Day 2-3, 골든 코퍼스 동결 전** 전환(아니면 코퍼스가 Chrome getComputedStyle 색/단위/인용을 baked).
+- **Tier-1**(필수/PR, chromium+webkit): 순수-엔진 6 spec + 골든 코퍼스(인라인-토글/justify/color/unlink/removeFormat 부분·중첩·혼합). WebKit이 `normalize()` caret·setEnd 가드 독립 통과.
+- **Tier-2**(필수/PR, chromium+webkit): React-chrome(mount/reconciler-exclusion/no-clobber/active-state/dialog caret/`.note-*` 스냅샷).
+- **Tier-3**(PR smoke+nightly, **emulated** mobile via Playwright device descriptors): webkit 'iOS-emulated'+chromium 'Android-emulated' — handle/air/statusbar/table/touch-tap. **emulated 명시 라벨**(실 iOS/IME/caret 재현 못 함).
+- **Tier-4**(릴리스 필수, nightly, **실기기 클라우드**): **BrowserStack**(2025 실-iOS-Safari Playwright + OSS Samsung Internet 무료 — 한 벤더로 iOS Safari+Android Chrome+Samsung Internet).
+- **Tier-5**(릴리스 게이트, **수동 device-lab, 사람 sign-off** — IME는 합성 이벤트로 CI 불가): 실-IME 한/일/중 on iOS Safari·Android Gboard·Samsung Keyboard — 다자모 한글 무손실, 조합 중/후 backspace, compositionend 직후 Enter(iOS racy), maxTextLength 조합 중, autocorrect/dictation 동기, compose-then-blur(164369), Samsung 빠른한글+backspace.
+- **CI**: PR=`vitest --browser` chromium+webkit+emulated smoke. nightly/release=BrowserStack(secrets-gated, fork clean-skip). 머지 게이트=Tier-1/2+emulated; **릴리스(v0.5/v1.0)=Tier-4 클라우드+Tier-5 수동 sign-off**. 실기기 이벤트 시퀀스 녹화→composition 상태머신 유닛 fixture(라이브 IME는 CI 불가하나 녹화는 재생).
+
+### 13.5 로드맵 / 게이트 갱신 (§7 보강)
+- **Phase 0**: freeze 게이트 'Chrome green'→**chromium+webkit 멀티인스턴스**; 코퍼스가 **명령 후 selection/caret**(anchor path+offset)도 캡처(HTML-only로는 caret 생존 검증 불가). provider 전환을 코퍼스 동결과 동시에.
+- **Phase 1**: v0.1 게이트에 **WebKit 추가**. IME=**composition 상태머신 + iOS-한글-무이벤트 휴리스틱 + Android keyCode-229 inputType 전환**.
+- **Phase 2**: execCommand 제거를 **Tier A/B/C 단계화**(각 caret+markup 코퍼스 chromium+webkit 게이트). `enableInlineTableEditing` suppression 추가. "**WebKit/iOS splitText+normalize 후 caret 생존**" 수락 기준 + N연속 명령 caret 스트레스(webkit).
+- **Phases 1-3 가로지르는 전용 모바일/터치 워크스트림**(execCommand 제거에 접지 말 것 — 예산 경쟁으로 늦게 발견): pointer-event 리라이트는 Phase 2 서비스와, selectionchange air·visualViewport·키보드 dock는 Phase 3 chrome과.
+- **v0.5/v1.0 게이트**: **Tier-4 실기기 + Tier-5 수동-IME sign-off** 추가. v1.0 수락 = "실 iOS Safari·Android Chrome·Samsung Internet 통과 + IME/터치 체크리스트 sign-off".
+
+### 13.6 추가 리스크 (상위)
+- **env 오분류**(High/거의확실 if verbatim): 모든 엔진 workaround가 잘못된 플래그에 키잉 → Safari no-op. → 엔진정확+feature-detect 재설계, 인스턴스별 유닛 검증.
+- **자체 인라인 명령이 iOS/WebKit splitText+normalize 후 caret 유실**(High/High): execCommand가 가려주던 것. → cloneRange + 명시 bookmark/select + 빈-span 헬퍼 + 'caret 생존' 수락기준.
+- **iOS 한글/dictation composition 이벤트 0**(High/Med-High): input-pattern 휴리스틱(iOS 버전마다 fragile, 실기기 QA 지속).
+- **Samsung Internet headless 드라이버 없음 + 삼성키보드가 raw contentEditable도 깨뜨림**(Med-High): 'Android Chrome이 커버' 가정 금지 → Tier-4 실기기 + Tier-5 수동 1급 타깃.
+- **거짓 확신**(High/process): Playwright WebKit·emulated green인데 실 iOS/Samsung 실패 → emulated 라벨 명시, 실기기+수동을 비협상 릴리스 게이트로.
+
+### 13.7 운영/범위 결정 필요 (사용자)
+1. **실기기 클라우드 + 수동-IME 릴리스 게이트** 예산·소유자(BrowserStack 권고) — 없으면 iOS Safari·Samsung 패리티 검증 불가 = "모바일 완벽" 보장 불가.
+2. **브라우저 지원 하한**: iOS Safari·Android Chrome·Samsung Internet 각 current+current-1? Firefox(데스크톱)는 명시 범위 밖 — non-gating Playwright 인스턴스로 둘지(거의 무료).
+3. **모바일 air/선택 툴바 아래 배치** divergence 승인(타이트 viewport+키보드 시 충돌-free 자리 없을 수 있음).
+
 ---
-*본 계획서는 13개 설계 에이전트(엔진-이식 3제안 + 심사 + 서브시스템 8 + 로드맵)의 종합이며, 사용자 결정(자체 엔진·외부 의존 0·전면 TS화·execCommand v1 제거)을 반영해 조정했다. 현 코드베이스 지도는 루트 [CLAUDE.md](../CLAUDE.md).*
+*본 계획서는 13개 설계 에이전트(엔진-이식 3제안 + 심사 + 서브시스템 8 + 로드맵) + 크로스브라우저/모바일 보강(6 에이전트)의 종합이며, 사용자 결정(자체 엔진·외부 의존 0·전면 TS화·execCommand v1 제거·Chromium+Safari+모바일 완벽 지원)을 반영해 조정했다. 현 코드베이스 지도는 루트 [CLAUDE.md](../CLAUDE.md).*
