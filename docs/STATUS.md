@@ -5,7 +5,8 @@
 
 ## 한눈에
 
-- 브랜치 `react-ts-port` (main에서 +48 커밋, **미푸시**).
+- **구조: 단일 패키지 `@eaeao4jerry/summernote-react`** (엔진+React 한 패키지, `src/engine`은 `@engine` alias로 번들 포함). 모노레포 해체. main 미푸시.
+- 설치: `npm i @eaeao4jerry/summernote-react` (단일). `npm publish` 한 번.
 - **🎉 Phase 3 + Phase 4 + Phase 5 완료 (v1.0 범위, 디바이스랩 게이트 제외).** 33 spec 파일, typecheck strict 클린, **core·react 둘 다 tsup 빌드 성공(ESM+CJS+.d.ts)**, `npm pack` 검증.
 - **Phase 5**: ①인라인토글 부분/중첩/혼합 선택 하드닝(양엔진) ②**아이콘 webfont**(note-icon-* 글리프 렌더, 전 테마) ③교차테마 computed-style 시각게이트 ④패키징(exports/sideEffects/pack dry-run).
 - ⚠️ **테스트 실행 정책(2026-06-18 변경)**: chromium+webkit 동시 실행이 PC를 멈춰서, **개발 중엔 chromium 단일 + 단일 spec + 실행후 프로세스 정리**. webkit/풀스위트는 마일스톤에만 1회. (vitest 게이트 설정 자체는 양엔진 유지.)
