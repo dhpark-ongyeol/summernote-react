@@ -5,8 +5,10 @@
 
 ## 한눈에
 
-- 브랜치 `react-ts-port` (main에서 +42 커밋, **미푸시**).
-- **🎉 Phase 3 + Phase 4 완료 (v1 범위).** 29 spec 파일 전부 green (chromium + webkit), **615 테스트 실행 0 실패**, typecheck strict 클린. **core·react 둘 다 tsup 빌드 성공(ESM+CJS+.d.ts)**.
+- 브랜치 `react-ts-port` (main에서 +48 커밋, **미푸시**).
+- **🎉 Phase 3 + Phase 4 + Phase 5 완료 (v1.0 범위, 디바이스랩 게이트 제외).** 33 spec 파일, typecheck strict 클린, **core·react 둘 다 tsup 빌드 성공(ESM+CJS+.d.ts)**, `npm pack` 검증.
+- **Phase 5**: ①인라인토글 부분/중첩/혼합 선택 하드닝(양엔진) ②**아이콘 webfont**(note-icon-* 글리프 렌더, 전 테마) ③교차테마 computed-style 시각게이트 ④패키징(exports/sideEffects/pack dry-run).
+- ⚠️ **테스트 실행 정책(2026-06-18 변경)**: chromium+webkit 동시 실행이 PC를 멈춰서, **개발 중엔 chromium 단일 + 단일 spec + 실행후 프로세스 정리**. webkit/풀스위트는 마일스톤에만 1회. (vitest 게이트 설정 자체는 양엔진 유지.)
 - **외부 editor/runtime 의존 0, jQuery 0, `document.execCommand` 0.**
 - **Phase 3 (v0.5, lite 풀패리티)**: 툴바 + 드롭다운(style/font/size/unit/lineheight/para/color/table) · 다이얼로그(link/image/video/help) · 팝오버(link/image/table) + 이미지 리사이즈 handle · fullscreen/codeview/statusbar/placeholder · 키보드 단축키 · 플러그인 API + imperative handle.
 - **어드버서리얼 리뷰(24 에이전트) → 확인된 15 결함 전부 수정**: **codeview XSS 게이트(codeviewFilter 이식 — §9 하드요구)**, link scheme allowlist, createLink 텍스트편집/blockquote 역변환, ownsRange 가드, ZWNBSP 누수, env FxiOS, 팝오버 위치 추적 등.
@@ -54,18 +56,17 @@ scripts/        check-no-jquery · check-no-runtime-deps · extract-golden
 
 ## 알려진 갭 / 기술부채 (Phase 5 + 하드닝)
 
-- **아이콘 webfont 미이식**: SVG→webfont 빌드(scripts/build-fonts.js)는 레거시 전용 — `note-icon-*` 글리프가 없음(구조·클래스는 동작, 드롭다운은 텍스트 폴백). Phase 5에서 webfont 빌드 이식 또는 별도 `@summernote/icons` 패키지.
-- **인라인 토글 부분/중첩/혼합 선택 하드닝** 미완(full-run은 골든 검증) — execCommand 제거 #1 long-tail. collapsed-cursor storedMarks도 미구현(현재 bogus-span만).
-- **Tier-4/Tier-5 실기기·수동-IME 게이트 미실행**(BrowserStack 시크릿 + sign-off 소유자 미배정) — 릴리스 전 필수(§13.7). 현재는 chromium+webkit 자동(Playwright) + env 9-UA 유닛만.
-- **교차테마 byte-equiv 시각 게이트** 미구현(클래스 계약은 Themes.spec으로 검증, computed-style 동등은 미게이트).
-- `insertHorizontalRule` 골든 미게이트(기능은 `commands-link-hr.spec`). `Style.current`(queryCommandState)는 1:1 보존하되 미사용(EditorCore는 구조적 검출).
-- 그래뉼러 패키지(icons/themes-css 분리), changesets, exports-map 검증, publish dry-run = Phase 5.
-- CRLF 경고는 무해(LF 커밋) — 원하면 `.gitattributes` 정규화.
+- ✅ **아이콘 webfont 이식 완료**: 레거시 pre-built `summernote.woff/woff2` + font.scss 글리프맵 → `@summernote/react/icons.css`(56 글리프, 47개 참조 아이콘 전부 매핑). `import '@summernote/react/icons.css'`.
+- ✅ **인라인 토글 부분/중첩/혼합 선택 하드닝 완료**(양엔진, `inline-toggle-hardening.spec`). collapsed-cursor storedMarks는 여전히 미구현(bogus-span만 — minor).
+- ⚠️ **Tier-4/Tier-5 실기기·수동-IME 게이트 미실행**(BrowserStack 시크릿 + sign-off 소유자 미배정 — 자율수행 불가). 릴리스 전 필수(§13.7). 현재 chromium+webkit 자동 + env 9-UA 유닛.
+- ✅ 교차테마 computed-style 시각게이트(`VisualGate.spec` — 글리프·테마 cascade·border-radius 차등). byte-equiv까지는 아님.
+- `insertHorizontalRule` 골든 미게이트(기능 검증됨). `Style.current`(queryCommandState) 1:1 보존하되 미사용.
+- **로케일 per-module tree-shake**: `locales` 레지스트리는 전체 번들 — 진짜 per-locale tree-shake는 tsup multi-entry 필요(현재 단일 index). v1.0 refinement.
+- changesets 셋업 미완(버전 0.0.0). CRLF 경고는 무해(LF 커밋).
 
-## 다음 단계 — Phase 5 (패키징·배포)
+## 다음 단계 (릴리스 전)
 
-Phase 3+4 완료(v1 기능 범위). 남은 건 릴리스 엔지니어링:
-1. **아이콘 webfont** 이식/패키징(글리프) — 시각 완성.
-2. **Tier-4 실기기(BrowserStack) + Tier-5 수동-IME sign-off** — 릴리스 게이트(§13.7).
-3. 교차테마 computed-style 시각 게이트 + 인라인 토글 엣지케이스 하드닝.
-4. 그래뉼러 패키지 그래프 + changesets + exports-map + publish dry-run → **v1.0**.
+기능·하드닝·패키징은 v1.0 범위 완료. 남은 건 **자율수행 불가 / 환경 의존** 항목:
+1. **Tier-4 실기기(BrowserStack) + Tier-5 수동-IME sign-off**(§13.7) — 시크릿·소유자 배정 필요.
+2. changesets 셋업 + 버전 범프 + 실제 `npm publish`(또는 dry-run 승인) → **v1.0 태깅**.
+3. (refinement) 로케일 multi-entry tree-shake, collapsed-cursor storedMarks, `.gitattributes` 정규화.
