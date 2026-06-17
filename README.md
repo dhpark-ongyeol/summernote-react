@@ -1,5 +1,11 @@
 # @eaeao/summernote-react
 
+[![npm](https://img.shields.io/npm/v/@eaeao/summernote-react.svg)](https://www.npmjs.com/package/@eaeao/summernote-react)
+[![license](https://img.shields.io/npm/l/@eaeao/summernote-react.svg)](./LICENSE)
+![runtime deps: 0](https://img.shields.io/badge/runtime%20deps-0-brightgreen)
+![no jQuery](https://img.shields.io/badge/jQuery-0-brightgreen)
+![types](https://img.shields.io/badge/types-included-blue)
+
 A **React + TypeScript** port of the [summernote](https://summernote.org) WYSIWYG editor — the
 editor engine and the React bindings in **one package**, with **zero runtime dependencies**, **no
 jQuery**, and **no `document.execCommand`**. Verified on Chromium + WebKit (Safari engine).
