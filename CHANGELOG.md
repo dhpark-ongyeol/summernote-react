@@ -1,5 +1,11 @@
 # @eaeao/summernote-react
 
+## 1.0.4
+
+### Patch Changes
+
+- Survive browser extensions that grab the editable selection. Dictionary / translator extensions (e.g. NDIC 누렁이 영어사전, Google Translate's selection popup) collapse the selection the instant a toolbar button is pressed, which silently no-op'd commands like **bold** and **color**. The engine now caches the last real in-editor selection and restores it before running a command — while still honouring a caret you place yourself (bold-then-type). The editable also opts out of Grammarly (`data-gramm`) and page translation (`translate="no"` / `notranslate`).
+
 ## 1.0.3
 
 ### Patch Changes
