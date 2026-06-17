@@ -14,7 +14,10 @@
  * the bookmark-accurate History) replaces the stubs here in Phase 2.
  */
 import dom from './core/dom';
+import wrappedRange from './core/range';
 import { History } from './editing/History';
+import { Style } from './editing/Style';
+import { Bullet } from './editing/Bullet';
 
 export interface EditorState {
   readonly bold: boolean;
@@ -59,6 +62,20 @@ function selectRange(range: Range): void {
   sel.addRange(range);
 }
 
+// Stateless editing-engine services shared by the commands.
+const style = new Style();
+const bullet = new Bullet();
+
+/** apply a block-level style (e.g. text-align) to the paragraphs in the current selection. */
+function applyBlockStyle(styleInfo: Record<string, string>): boolean {
+  const rng = wrappedRange.create();
+  if (!rng) {
+    return false;
+  }
+  style.stylePara(rng, styleInfo);
+  return true;
+}
+
 const COMMANDS: Record<string, Command> = {
   insertText(core, ...args): boolean {
     const text = String(args[0] ?? '');
@@ -99,6 +116,20 @@ const COMMANDS: Record<string, Command> = {
       range.selectNodeContents(b);
       selectRange(range);
     }
+    return true;
+  },
+
+  // --- Tier-A block commands (own surgery via the ported editing engine) ---
+  justifyLeft: (): boolean => applyBlockStyle({ 'text-align': 'left' }),
+  justifyCenter: (): boolean => applyBlockStyle({ 'text-align': 'center' }),
+  justifyRight: (): boolean => applyBlockStyle({ 'text-align': 'right' }),
+  justifyFull: (): boolean => applyBlockStyle({ 'text-align': 'justify' }),
+  insertOrderedList: (core): boolean => {
+    bullet.insertOrderedList(core.editable);
+    return true;
+  },
+  insertUnorderedList: (core): boolean => {
+    bullet.insertUnorderedList(core.editable);
     return true;
   },
 
