@@ -1,12 +1,12 @@
 /**
- * CI gate: the @eaeao4jerry/summernote-* packages must contain ZERO jQuery usage.
+ * CI gate: the published package (src/) must contain ZERO jQuery usage.
  * Backstop for the port's "jQuery removed entirely" invariant — runs from commit one.
  * Comment text is stripped before matching so doc comments may mention jQuery freely.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-const ROOTS = ['packages'];
+const ROOTS = ['src'];
 const FILE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
 const SKIP_DIR = /(^|[\\/])(dist|node_modules)([\\/]|$)/;
 
@@ -45,7 +45,7 @@ for (const root of ROOTS) {
 }
 
 if (violations.length > 0) {
-  console.error('check-no-jquery: FAIL — jQuery is banned in @eaeao4jerry/summernote-* packages:\n' + violations.join('\n'));
+  console.error('check-no-jquery: FAIL — jQuery is banned:\n' + violations.join('\n'));
   process.exit(1);
 }
-console.log('check-no-jquery: OK — zero jQuery usage under packages/');
+console.log('check-no-jquery: OK — zero jQuery usage under src/');

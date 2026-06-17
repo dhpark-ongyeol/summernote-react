@@ -1,27 +1,52 @@
 {
-  "name": "summernote-react-monorepo",
-  "description": "React + TypeScript port of summernote (zero-dep editor engine + React bindings)",
+  "name": "@eaeao4jerry/summernote-react",
   "version": "1.0.0",
+  "description": "React + TypeScript port of summernote — editor engine + React bindings in one package (zero runtime deps, no jQuery, no execCommand)",
   "license": "MIT",
-  "private": true,
   "type": "module",
-  "workspaces": [
-    "packages/*"
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./styles.css": "./src/styles/summernote-lite.css",
+    "./icons.css": "./src/styles/summernote-icons.css",
+    "./themes/bs3.css": "./src/styles/themes/bs3.css",
+    "./themes/bs4.css": "./src/styles/themes/bs4.css",
+    "./themes/bs5.css": "./src/styles/themes/bs5.css"
+  },
+  "files": [
+    "dist",
+    "src/styles"
   ],
   "engines": {
     "node": ">=18.0.0"
   },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
   "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint:no-jquery": "node scripts/check-no-jquery.mjs",
     "check:deps": "node scripts/check-no-runtime-deps.mjs",
-    "typecheck": "yarn workspace @eaeao4jerry/summernote-core typecheck && yarn workspace @eaeao4jerry/summernote-react typecheck",
     "verify": "yarn lint:no-jquery && yarn check:deps && yarn typecheck",
-    "build:packages": "yarn workspace @eaeao4jerry/summernote-core build && yarn workspace @eaeao4jerry/summernote-react build",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "yarn verify && yarn build:packages && changeset publish"
+    "release": "yarn verify && yarn build && changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.9",

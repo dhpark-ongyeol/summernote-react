@@ -37,26 +37,30 @@
 | `yarn lint:no-jquery` / `yarn check:deps` | CI 게이트 단독 실행 |
 | `yarn changeset` / `version-packages` / `release` | changesets 릴리스 플로우 |
 
-## 디렉토리 구조
+## 디렉토리 구조 (v1.0 — 단일 패키지 `@eaeao4jerry/summernote-react`)
 
 ```
-src/js/
-  summernote.js        # jQuery 플러그인 진입점 ($.fn.summernote)
-  Context.js           # 중앙 오케스트레이터 (모듈 레지스트리·invoke·이벤트)
-  renderer.js          # UI 마크업 팩토리 추상화
-  settings.js          # $.summernote.options 기본값 + 기본 모듈 레지스트리  ★옵션 SSOT
-  summernote-en-US.js  # 기본 영어 langpack
-  core/                # 프레임워크 비종속 유틸 (dom·range·func·lists·env·key·async)
-  editing/             # 편집 엔진 (History·Style·Table·Typing·Bullet)
-  module/              # 22개 기능 모듈 (Editor 중심 + 툴바·다이얼로그·팝오버·동작)
-src/styles/{bs3,bs4,bs5,lite}/   # 테마별 진입점(.js) + SCSS. lite는 js/{DropdownUI,ModalUI,TooltipUI}
-src/styles/summernote/           # 공통 SCSS (common·font·elements)
-public/plugin/{hello,specialchars,databasic}/   # 외부 플러그인 예제
-public/lang/summernote-<locale>.js              # i18n 언어팩 (50+ 로케일)
-test/base/...        # src/ 구조를 미러링한 *.spec.js
-scripts/             # 빌드 오케스트레이션 + vite 플러그인
-examples/            # 데모 HTML
+src/
+  index.ts             # 단일 패키지 배럴: React API + `export * from './engine'`(엔진 API)
+  SummernoteEditor.tsx # controlled/uncontrolled + forwardRef imperative handle
+  useSummernote.ts     # 헤드리스 훅 (uncontrolled editable + useSyncExternalStore)
+  plugin.ts plugins/   # definePlugin + hello/specialchars/databasic
+  toolbar/  chrome/     # 툴바 레지스트리 + 드롭다운·다이얼로그·팝오버·statusbar·codeview·air …
+  styles/              # summernote-lite.css · icons.css(+fonts/) · themes/{bs3,bs4,bs5}.css
+  engine/              # ★헤드리스 엔진(구 @summernote/core). chrome은 `@engine` alias로 import
+    EditorCore.ts  options.ts  index.ts(엔진 배럴)
+    core/      # 프레임워크 비종속 유틸 (dom·range·func·lists·env·key)
+    editing/   # History·Style·Table·Typing·Bullet
+    lang/      # en-US + locales/<46개>.ts + resolveLang
+    media/video.ts  security/purify.ts
+test/                  # 평탄화된 *.spec.{ts,tsx} + setup.ts·util.ts·golden/ (vitest browser)
+scripts/               # check-no-jquery · check-no-runtime-deps (CI 게이트)
+docs/                  # PORTING-PLAN · STATUS · CHROME-SPECS
 ```
+- 빌드: `tsup`이 `@engine`(esbuild alias)을 **번들에 포함** → 단일 dist(ESM+CJS+dts). external은 react/react-dom뿐.
+- `@engine` = `src/engine/index.ts` (tsconfig paths + vitest alias + tsup esbuild alias). chrome 코드는 엔진을 `@engine`으로 참조.
+
+> 아래 아키텍처 섹션은 **포팅의 출처가 된 레거시 jQuery 설계를 historical reference로** 기술한다(현재 코드는 위 구조; 레거시 원본은 git 히스토리).
 
 ## 아키텍처: 부트스트랩 흐름
 

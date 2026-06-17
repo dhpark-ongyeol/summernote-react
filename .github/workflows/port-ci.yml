@@ -1,10 +1,10 @@
 name: port-ci
 
-# CI for the React + TypeScript port (@eaeao4jerry/summernote-* packages).
-# Multi-engine gate: the suite must pass on BOTH Chromium and WebKit from day one.
+# CI for @eaeao4jerry/summernote-react (single package).
+# Multi-engine gate: the suite must pass on BOTH Chromium and WebKit.
 on:
   push:
-    branches: [react-ts-port, main]
+    branches: [main]
   pull_request:
 
 jobs:
@@ -22,9 +22,7 @@ jobs:
       - name: Zero-dep gate
         run: node scripts/check-no-runtime-deps.mjs
       - name: Typecheck
-        run: |
-          yarn workspace @eaeao4jerry/summernote-core typecheck
-          yarn workspace @eaeao4jerry/summernote-react typecheck
+        run: yarn typecheck
       - name: Install Playwright browsers
         run: yarn playwright install --with-deps chromium webkit
       - name: Test (chromium + webkit)
