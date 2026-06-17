@@ -5,8 +5,8 @@
 
 ## 한눈에
 
-- 브랜치 `react-ts-port` (main에서 분기, **미푸시**) — 구현 커밋 18개.
-- **전체 430 테스트 green (chromium + webkit), typecheck strict 클린.**
+- 브랜치 `react-ts-port` (main에서 분기, **미푸시**) — 구현 커밋 19개.
+- **전체 446 테스트 green (chromium + webkit), typecheck strict 클린.**
 - **외부 editor/runtime 의존 0, jQuery 0, `document.execCommand` 0.**
 
 ## 실행법
@@ -43,12 +43,13 @@ scripts/        check-no-jquery · check-no-runtime-deps · extract-golden
 | **Phase 1** 슬라이스 | EditorCore + **IME composition 상태머신**(observe-only+settle+reconcile) + React 경계(uncontrolled editable, reconciler-exclusion) → **v0.1** |
 | **Phase 2a** 편집엔진 | Style/Typing/Bullet/Table/History 1:1 이식 (style/Table/Typing spec) |
 | **Phase 2b** 자체명령 | **execCommand 완전 제거.** insertText · 인라인토글6(`Style.styleNodes`) · removeFormat · justify(`stylePara`) · lists(`Bullet`) · formatBlock(`dom.replace`) · createLink · unlink · hr · **table(insertTable/addRow/addCol/deleteRow/deleteCol/deleteTable)** · undo/redo(faithful `History`) |
+| **Phase 3a** 상태발행 | `EditorState` 전체 active-state(인라인6·list·align·formatBlock·link·undo/redo·IME) **구조적 검출**(queryCommandState 미사용). `INLINE_TOGGLES` 단일출처 → 토글↔하이라이트 무드리프트 |
 
 **골든 parity 게이트**(`golden-parity.spec`): 레거시가 execCommand로 만든 출력을 자체 명령 엔진이 **38 케이스 재현**(왕복+블록+인라인). 인라인은 결정적 마크업(strike→`<s>`) 재기준선. ⇒ "execCommand 없이 레거시 동등" 증명.
 
 ## 알려진 갭 / 기술부채
 
-- `EditorState`가 최소(bold/canUndo/canRedo/isComposing) — 툴바 전체 active-state(italic/underline/fontName/align/list…) 위해 **확장 필요**(Phase 3).
+- ✅ `EditorState` 확장 완료(bold/italic/underline/strike/sup/sub/ordered·unordered list/align/formatBlock/link/canUndo/canRedo/isComposing) — **구조적 검출**(queryCommandState 미사용, 자체 마크업 결정적 감지). `INLINE_TOGGLES` 맵으로 토글↔하이라이트 단일 출처. 남은 건 fontName/fontSize/색상 등 값-기반 상태(폰트 드롭다운 붙일 때 추가).
 - **인라인 토글은 full-run 선택 검증됨**(골든 케이스). 부분/중첩/혼합 선택 하드닝은 미완 — execCommand 제거의 #1 리스크 long-tail.
 - `insertHorizontalRule` 골든 미게이트(레거시 출력이 quirky `<p><br></p><hr><p>hello</p>` — 자체 출력으로 재기준선 필요).
 - collapsed-cursor 포맷(storedMarks) 미구현.
@@ -63,7 +64,7 @@ scripts/        check-no-jquery · check-no-runtime-deps · extract-golden
 2. (옵션) `insertHorizontalRule`를 golden-parity에 자체 출력으로 재기준선 — 현재 `commands-link-hr.spec`으로 기능 검증됨(`<hr>` 삽입).
 
 **Phase 3 — React chrome → v0.5**
-1. `EditorState` 확장(전체 active-state) — `Style.current` 구조적 버전을 EditorCore에서 계산해 발행.
+1. ✅ `EditorState` 확장 완료(전체 active-state, 구조적 검출, `editor-state.spec`).
 2. 테마별 React chrome: `<Toolbar>` (config `[group,[buttons]]`) · button/dropdown/colorpalette/table-picker · 다이얼로그(link/image/video/help, Promise) · 팝오버(link/image/table/air, `coordsAtPos`) · statusbar/handle/fullscreen/placeholder. 명령은 `core.command(name,...)`로 연결.
 3. `.note-*` 클래스 계약 유지 + lite/bs3/bs4/bs5 ThemeSpec.
 4. 크로스브라우저(§13): Pointer Events 터치, visualViewport 키보드 dock, 모바일 air-popover 아래 배치.
