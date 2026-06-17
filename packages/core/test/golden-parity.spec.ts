@@ -4,12 +4,13 @@ import { mount, resetDom } from '../../../test/util';
 import golden from '../../../test/golden/commands.json';
 
 /**
- * Golden parity gate: replay the legacy-recorded corpus through the new own-command engine
- * and assert the output reproduces the legacy oracle.
+ * Golden parity gate: replay the legacy-recorded corpus (test/golden/commands.json) through
+ * the new own-command engine (NO execCommand) and assert it reproduces the legacy oracle.
  *
- * Scope here = Tier-A block commands (justify/lists) implemented via the ported editing
- * engine (Style.stylePara / Bullet). Inline-format toggles (Style.styleNodes-based, with a
- * deterministic-markup re-baseline) are gated in a follow-up.
+ * - Tier-A block commands (justify/lists via Style.stylePara / Bullet) must match byte-for-byte.
+ * - Tier-B inline-format toggles (via Style.styleNodes) match after a deterministic-markup
+ *   re-baseline: own-commands emit modern <s> where legacy execCommand emitted deprecated
+ *   <strike> (see PORTING-PLAN.md §2). All other inline tags match the legacy output.
  */
 const BLOCK_METHODS = new Set([
   'justifyLeft',
@@ -20,6 +21,21 @@ const BLOCK_METHODS = new Set([
   'insertUnorderedList',
 ]);
 
+const INLINE_METHODS = new Set([
+  'bold',
+  'italic',
+  'underline',
+  'strikethrough',
+  'superscript',
+  'subscript',
+  'removeFormat',
+]);
+
+/** the only sanctioned deviation: deprecated <strike> is re-baselined to modern <s>. */
+function reBaseline(html: string): string {
+  return html.replace(/<strike>/gi, '<s>').replace(/<\/strike>/gi, '</s>');
+}
+
 function selectAll(editable: HTMLElement): void {
   const range = document.createRange();
   range.selectNodeContents(editable);
@@ -28,28 +44,30 @@ function selectAll(editable: HTMLElement): void {
   sel?.addRange(range);
 }
 
+function method(rec: { action: { method: string } }): string {
+  return rec.action.method.replace(/^editor\./, '');
+}
+
 afterEach(() => {
   resetDom();
 });
 
-describe('golden parity — Tier-A block commands (multi-engine)', () => {
-  const cases = golden.records.filter(
-    (r) => r.action !== null && r.select === 'all' && BLOCK_METHODS.has(r.action.method.replace(/^editor\./, '')),
-  );
+describe('golden parity (multi-engine, own-commands vs legacy oracle)', () => {
+  const blockCases = golden.records.filter((r) => r.action !== null && r.select === 'all' && BLOCK_METHODS.has(method(r as { action: { method: string } })));
+  const inlineCases = golden.records.filter((r) => r.action !== null && r.select === 'all' && INLINE_METHODS.has(method(r as { action: { method: string } })));
 
-  it('covers the recorded block commands', () => {
-    // justifyRight + insertOrderedList + insertUnorderedList
-    expect(cases.length).toBeGreaterThanOrEqual(3);
+  it('covers the recorded block + inline commands', () => {
+    expect(blockCases.length).toBeGreaterThanOrEqual(3); // justifyRight, ol, ul
+    expect(inlineCases.length).toBeGreaterThanOrEqual(7); // b/i/u/strike/sup/sub/removeFormat
   });
 
-  for (const rec of cases) {
-    const method = rec.action!.method.replace(/^editor\./, '');
+  for (const rec of [...blockCases, ...inlineCases]) {
     it(`reproduces legacy ${rec.name}`, () => {
       const el = mount('<div></div>');
       const core = createEditorCore(el, { value: rec.initialHTML });
       selectAll(el);
-      core.command(method);
-      expect(core.getHTML()).equalsIgnoreCase(rec.resultHTML);
+      core.command(method(rec as { action: { method: string } }));
+      expect(core.getHTML()).equalsIgnoreCase(reBaseline(rec.resultHTML));
       core.destroy();
     });
   }

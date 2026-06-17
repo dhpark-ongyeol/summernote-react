@@ -76,6 +76,59 @@ function applyBlockStyle(styleInfo: Record<string, string>): boolean {
   return true;
 }
 
+function unwrapEl(el: HTMLElement): void {
+  const parent = el.parentNode;
+  if (!parent) {
+    return;
+  }
+  while (el.firstChild) {
+    parent.insertBefore(el.firstChild, el);
+  }
+  parent.removeChild(el);
+}
+
+const INLINE_FORMAT_TAGS = ['B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'SUP', 'SUB', 'SPAN'];
+
+/**
+ * Toggle an inline format (the Tier-B own-command path that replaces execCommand): wrap the
+ * selected text runs via Style.styleNodes, or unwrap if the selection already sits inside a
+ * matching tag. Markup is deterministic (e.g. strike -> <s>), unlike execCommand.
+ */
+function toggleInline(matchTags: string[], nodeName: string): boolean {
+  const rng = wrappedRange.create();
+  if (!rng || rng.isCollapsed()) {
+    return false; // collapsed-cursor formatting (storedMarks) is a later step
+  }
+  const active = dom.ancestor(rng.sc, (n: Node) => matchTags.includes(n.nodeName)) as HTMLElement | null;
+  if (active) {
+    unwrapEl(active);
+    return true;
+  }
+  const nodes = style.styleNodes(rng, { nodeName });
+  if (nodes.length > 0) {
+    const first = nodes[0];
+    const last = nodes[nodes.length - 1];
+    const r = document.createRange();
+    r.setStart(first, 0);
+    r.setEnd(last, last.childNodes.length);
+    selectRange(r);
+  }
+  return true;
+}
+
+function clearFormat(): boolean {
+  const rng = wrappedRange.create();
+  if (!rng) {
+    return false;
+  }
+  let ancestor = dom.ancestor(rng.sc, (n: Node) => INLINE_FORMAT_TAGS.includes(n.nodeName)) as HTMLElement | null;
+  while (ancestor) {
+    unwrapEl(ancestor);
+    ancestor = dom.ancestor(rng.sc, (n: Node) => INLINE_FORMAT_TAGS.includes(n.nodeName)) as HTMLElement | null;
+  }
+  return true;
+}
+
 const COMMANDS: Record<string, Command> = {
   insertText(core, ...args): boolean {
     const text = String(args[0] ?? '');
@@ -92,32 +145,14 @@ const COMMANDS: Record<string, Command> = {
     return true;
   },
 
-  // Minimal own-Range bold toggle (slice-level). Phase 2 replaces this with the faithful
-  // Style.styleNodes implementation that handles partial/nested/mixed selections.
-  bold(core): boolean {
-    const range = currentRange();
-    if (!range || range.collapsed || !core.ownsRange(range)) {
-      return false; // collapsed-cursor bold (storedMarks) is Phase 2
-    }
-    const boldAncestor = dom.ancestor(range.startContainer, isBoldTag) as HTMLElement | null;
-    if (boldAncestor) {
-      // unwrap: move the <b> children out, drop the <b>
-      const parent = boldAncestor.parentNode;
-      if (parent) {
-        while (boldAncestor.firstChild) {
-          parent.insertBefore(boldAncestor.firstChild, boldAncestor);
-        }
-        parent.removeChild(boldAncestor);
-      }
-    } else {
-      const b = document.createElement('b');
-      b.appendChild(range.extractContents());
-      range.insertNode(b);
-      range.selectNodeContents(b);
-      selectRange(range);
-    }
-    return true;
-  },
+  // --- Tier-B inline-format toggles (own-command via Style.styleNodes, NO execCommand) ---
+  bold: (): boolean => toggleInline(['B', 'STRONG'], 'B'),
+  italic: (): boolean => toggleInline(['I', 'EM'], 'I'),
+  underline: (): boolean => toggleInline(['U'], 'U'),
+  strikethrough: (): boolean => toggleInline(['S', 'STRIKE'], 'S'),
+  superscript: (): boolean => toggleInline(['SUP'], 'SUP'),
+  subscript: (): boolean => toggleInline(['SUB'], 'SUB'),
+  removeFormat: (): boolean => clearFormat(),
 
   // --- Tier-A block commands (own surgery via the ported editing engine) ---
   justifyLeft: (): boolean => applyBlockStyle({ 'text-align': 'left' }),
