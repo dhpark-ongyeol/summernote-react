@@ -76,6 +76,7 @@ export function FontSizeDropdown(): JSX.Element {
   return (
     <Dropdown
       title={lang.font.size}
+      toggleClassName="note-btn-size"
       menuClassName="dropdown-fontsize"
       toggle={<span className="note-current-fontsize">{state.fontSize || ''}</span>}
     >
@@ -134,6 +135,7 @@ export function LineHeightDropdown(): JSX.Element {
   return (
     <Dropdown
       title={lang.font.height}
+      toggleClassName="note-btn-height"
       menuClassName="dropdown-line-height"
       toggle={<span className={options.icons.textHeight} aria-hidden="true" />}
     >

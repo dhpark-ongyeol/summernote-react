@@ -20,7 +20,7 @@ export interface KeyMap {
 
 export const defaultOptions = {
   toolbar: [
-    ['style', ['style']],
+    ['style', ['style', 'fontsize', 'height']],
     ['font', ['bold', 'underline', 'clear']],
     ['fontname', ['fontname']],
     ['color', ['color']],

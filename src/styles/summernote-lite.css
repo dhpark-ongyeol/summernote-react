@@ -66,6 +66,26 @@
 .note-btn-group > .note-btn:not(:first-child) {
   margin-left: -1px;
 }
+/* Several controls (dropdowns/buttons) inside one toolbar group connect like a segmented button
+   group — no inter-control gap, overlapping 1px borders, only the outer corners rounded. */
+.note-btn-group > .note-btn-group {
+  margin-right: 0;
+}
+.note-btn-group > .note-btn-group:not(:first-child) {
+  margin-left: -1px;
+}
+.note-btn-group > .note-btn-group > .note-btn {
+  border-radius: 0;
+}
+.note-btn-group > .note-btn-group:first-child > .note-btn {
+  border-radius: 3px 0 0 3px;
+}
+.note-btn-group > .note-btn-group:last-child > .note-btn {
+  border-radius: 0 3px 3px 0;
+}
+.note-btn-group > .note-btn-group:first-child:last-child > .note-btn {
+  border-radius: 3px;
+}
 .note-btn:hover {
   background: #ebebeb;
 }
@@ -80,6 +100,9 @@
 }
 .note-btn .note-icon-caret {
   margin-left: 3px;
+  /* nudge the caret right without changing the button box (relative offset keeps the layout) */
+  position: relative;
+  left: 2px;
 }
 
 /* dropdowns */
