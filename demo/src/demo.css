@@ -54,13 +54,17 @@ code {
 
 /* ── page shell ─────────────────────────────────────────── */
 .page {
-  max-width: 1080px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 0 24px 90px;
 }
+/* wide screens: two columns — content + a bookmark rail glued to .page's right edge */
 @media (min-width: 1040px) {
   .page {
-    padding-right: 288px; /* gutter for the floating bookmark menu */
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 244px;
+    column-gap: 32px;
+    align-items: start;
   }
 }
 
@@ -326,16 +330,17 @@ details.snippet[open] > summary::before {
   font-size: 14px;
 }
 
-/* ── floating bookmark menu (top-right, follows scroll) ──── */
+/* ── bookmark rail (right edge of .page, sticks while scrolling) ──── */
 .bookmark {
-  position: fixed;
+  position: sticky;
   top: 18px;
-  right: 18px;
+  align-self: start;
   z-index: 50;
   width: 244px;
-  background: color-mix(in srgb, var(--card) 92%, transparent);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card) 68%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
   border-radius: 14px;
   box-shadow: var(--shadow);
   overflow: hidden;
@@ -387,9 +392,12 @@ details.snippet[open] > summary::before {
   text-align: center;
 }
 
-/* on narrow screens the menu collapses to its bar (toggle to overlay the list) */
+/* narrow screens: the rail detaches, floats top-right, and collapses to its bar */
 @media (max-width: 1039px) {
   .bookmark {
+    position: fixed;
+    top: 18px;
+    right: 18px;
     width: auto;
     max-width: 260px;
   }

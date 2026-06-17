@@ -23,7 +23,7 @@ export interface Example {
 function Snippet({ code }: { code: string }): JSX.Element {
   const [copied, setCopied] = useState(false);
   return (
-    <details className="snippet">
+    <details className="snippet" open>
       <summary>code</summary>
       <div style={{ position: 'relative' }}>
         <button
