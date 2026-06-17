@@ -1,4 +1,4 @@
-import { useEffect, useState, type RefObject } from 'react';
+import { useEffect, useReducer, useRef, useState, type RefObject } from 'react';
 import { useChrome } from './ChromeContext';
 import { LinkPopover, TablePopover, ImagePopover } from './popovers';
 import { Handle } from './Handle';
@@ -40,6 +40,11 @@ function closestEl(selector: string): HTMLElement | null {
 export function PopoverHost({ editingAreaRef }: PopoverHostProps): JSX.Element | null {
   const { core, state, codeviewActive } = useChrome();
   const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const imageRef = useRef<HTMLImageElement | null>(image);
+  imageRef.current = image;
+  // bump on selectionchange so positions recompute when the caret moves WITHIN the same format
+  // context (EditorState is referentially stable then, so it wouldn't otherwise re-render).
+  const [, repaint] = useReducer((c: number) => c + 1, 0);
 
   useEffect(() => {
     const editable = core?.editable;
@@ -51,11 +56,25 @@ export function PopoverHost({ editingAreaRef }: PopoverHostProps): JSX.Element |
       setImage(t.tagName === 'IMG' ? (t as HTMLImageElement) : null);
     };
     const onKeyDown = (): void => setImage(null);
+    const onSelectionChange = (): void => {
+      // clear a stale image selection once the caret lands in text (so it stops masking the
+      // link/table popover), then repaint positions.
+      if (imageRef.current) {
+        const sel = window.getSelection();
+        const node = sel && sel.rangeCount ? sel.getRangeAt(0).startContainer : null;
+        if (node && node.nodeType === Node.TEXT_NODE) {
+          setImage(null);
+        }
+      }
+      repaint();
+    };
     editable.addEventListener('click', onClick);
     editable.addEventListener('keydown', onKeyDown);
+    document.addEventListener('selectionchange', onSelectionChange);
     return (): void => {
       editable.removeEventListener('click', onClick);
       editable.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('selectionchange', onSelectionChange);
     };
   }, [core]);
 
@@ -73,7 +92,14 @@ export function PopoverHost({ editingAreaRef }: PopoverHostProps): JSX.Element |
       <>
         <ImagePopover img={image} pos={pos} onAfterRemove={() => setImage(null)} />
         {r && a ? (
-          <Handle img={image} top={r.top - a.top} left={r.left - a.left} width={r.width} height={r.height} />
+          <Handle
+            img={image}
+            top={r.top - a.top}
+            left={r.left - a.left}
+            width={r.width}
+            height={r.height}
+            onResize={repaint}
+          />
         ) : null}
       </>
     );

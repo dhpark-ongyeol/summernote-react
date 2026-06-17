@@ -18,3 +18,6 @@ export { detectEnv } from './core/env';
 export type { EnvFlags } from './core/env';
 
 export { createVideoNode } from './media/video';
+
+export { purifyCodeview, isSafeLinkUrl, defaultCodeviewFilter } from './security/purify';
+export type { CodeviewFilterOptions } from './security/purify';

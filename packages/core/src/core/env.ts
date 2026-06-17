@@ -76,8 +76,9 @@ export function detectEnv(nav: NavigatorLike, win: WindowLike): EnvFlags {
 
   // Blink = Chromium engine on a non-iOS platform (Apple forbids non-WebKit engines on iOS).
   const isBlink = !isIOS && !isMSIE && !isFF && (hasChromeToken || isSamsungInternet || isEdge);
-  // Apple WebKit = iOS (always WebKit) or a non-Blink desktop WebKit (Safari).
-  const isAppleWebKit = !isMSIE && !isFF && !isBlink && (isIOS || /AppleWebKit/.test(ua));
+  // Apple WebKit = iOS (ALWAYS WebKit, even Firefox/Chrome skins) or a non-Blink desktop WebKit
+  // (Safari). isFF is kept for keymap/Gecko quirks but must not exclude FxiOS from the engine flag.
+  const isAppleWebKit = !isMSIE && !isBlink && (isIOS || (/AppleWebKit/.test(ua) && !isFF));
   // Safari proper = WebKit, the Safari token present, and NOT a Chrome/FF/Edge iOS wrapper.
   const isSafari = isAppleWebKit && /Safari\//.test(ua) && !hasChromeToken && !isIosWrapper;
 

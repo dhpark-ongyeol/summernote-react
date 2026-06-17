@@ -18,6 +18,7 @@ import wrappedRange from './core/range';
 import env from './core/env';
 import { createVideoNode } from './media/video';
 import { defaultOptions, type KeyMap } from './options';
+import { isSafeLinkUrl } from './security/purify';
 import { History } from './editing/History';
 import { Style } from './editing/Style';
 import { Bullet } from './editing/Bullet';
@@ -159,9 +160,14 @@ function readStyle(cont: Element, para: HTMLElement | null): ValueStyle {
   const inlineLH = para && para.style ? para.style.lineHeight : '';
   if (inlineLH !== '' && inlineLH !== undefined) {
     lineHeight = inlineLH;
-  } else if (!Number.isNaN(sizeNum) && sizeNum > 0) {
-    const ratio = parseInt(computed.lineHeight, 10) / sizeNum;
-    lineHeight = Number.isFinite(ratio) ? ratio.toFixed(1) : '';
+  } else {
+    // ratio = computed line-height / computed font-size — BOTH in px (don't divide a px
+    // line-height by a pt inline size; that would mis-report the ratio when the font is in pt).
+    const pxSize = parseInt(computed.fontSize, 10);
+    if (!Number.isNaN(pxSize) && pxSize > 0) {
+      const ratio = parseInt(computed.lineHeight, 10) / pxSize;
+      lineHeight = Number.isFinite(ratio) ? ratio.toFixed(1) : '';
+    }
   }
 
   return { fontName, fontSize, fontSizeUnit, lineHeight };
@@ -286,10 +292,12 @@ function applyInlineStyle(cssProp: string, value: string): boolean {
   const last = spans[spans.length - 1];
   if (rng.isCollapsed()) {
     if (first && !first.firstChild) {
+      // seed a ZERO_WIDTH bogus char so WebKit keeps the caret INSIDE the empty styled span, and
+      // SELECT it (don't collapse past) so the next keystroke replaces it — otherwise the U+FEFF
+      // would persist permanently in saved content.
       first.innerHTML = dom.ZERO_WIDTH_NBSP_CHAR;
       const r = document.createRange();
       r.selectNodeContents(first);
-      r.collapse(false);
       selectRange(r);
     }
   } else if (first && last) {
@@ -360,14 +368,25 @@ function formatBlock(tag: string): boolean {
   if (!rng) {
     return false;
   }
-  const paras = rng.nodes(dom.isPara, { includeAncestor: true });
+  let paras = rng.nodes(dom.isPara, { includeAncestor: true });
+  if (paras.length === 0) {
+    // inside a blockquote/pre (not isPara) — target the closest format block so conversion is
+    // bidirectional (the style dropdown can round-trip out of Quote/Code).
+    const block = dom.ancestor(rng.sc, (n: Node) => FORMAT_BLOCK_TAGS.includes(n.nodeName)) as HTMLElement | null;
+    if (block && !dom.isEditable(block)) {
+      paras = [block];
+    }
+  }
   for (const para of paras) {
-    if (para.nodeName.toLowerCase() !== tag.toLowerCase()) {
+    if (!dom.isEditable(para) && para.nodeName.toLowerCase() !== tag.toLowerCase()) {
       dom.replace(para, tag);
     }
   }
-  return true;
+  return paras.length > 0;
 }
+
+/** commands that don't act on the live selection (history, or explicit-target image ops). */
+const SELECTIONLESS_COMMANDS = new Set(['undo', 'redo', 'resizeImage', 'floatImage', 'removeMedia']);
 
 const COMMANDS: Record<string, Command> = {
   insertText(core, ...args): boolean {
@@ -428,8 +447,8 @@ const COMMANDS: Record<string, Command> = {
     const opts = (args[0] ?? {}) as { url?: string; text?: string; newWindow?: boolean };
     const url = opts.url ?? '';
     const native = currentRange();
-    if (url === '' || !native) {
-      return false;
+    if (url === '' || !native || !isSafeLinkUrl(url)) {
+      return false; // reject empty + javascript:/vbscript:/data: schemes (hardening beyond legacy)
     }
     const applyTarget = (a: HTMLAnchorElement): void => {
       if (opts.newWindow === true) {
@@ -440,11 +459,12 @@ const COMMANDS: Record<string, Command> = {
         a.removeAttribute('rel');
       }
     };
-    // editing an existing anchor: update href/text/target in place (no nested <a>)
+    // editing an existing anchor: update href/target in place (no nested <a>); only rewrite the
+    // text when it actually changed, so nested markup inside the anchor is preserved otherwise.
     const existing = dom.ancestor(native.startContainer, dom.isAnchor) as HTMLAnchorElement | null;
     if (existing) {
       existing.setAttribute('href', url);
-      if (opts.text !== undefined && opts.text !== '') {
+      if (opts.text !== undefined && opts.text !== '' && opts.text !== existing.textContent) {
         existing.textContent = opts.text;
       }
       applyTarget(existing);
@@ -453,9 +473,13 @@ const COMMANDS: Record<string, Command> = {
     const a = dom.create('A') as HTMLAnchorElement;
     a.setAttribute('href', url);
     applyTarget(a);
-    if (!native.collapsed) {
-      a.appendChild(native.extractContents());
+    const isTextChanged = opts.text !== undefined && opts.text !== '' && opts.text !== native.toString();
+    if (!native.collapsed && !isTextChanged) {
+      a.appendChild(native.extractContents()); // keep the selected markup
     } else {
+      if (!native.collapsed) {
+        native.deleteContents(); // the user edited the display text — replace it
+      }
       a.textContent = opts.text !== undefined && opts.text !== '' ? opts.text : url;
     }
     native.insertNode(a);
@@ -670,6 +694,14 @@ export class EditorCore {
     if (!cmd) {
       return false;
     }
+    // refuse to mutate the document when the live selection is outside this editor — except for
+    // selectionless / explicit-target commands (undo/redo, image ops that receive the target node).
+    if (!SELECTIONLESS_COMMANDS.has(name)) {
+      const live = currentRange();
+      if (live && !this.ownsRange(live)) {
+        return false;
+      }
+    }
     this.beforeCommand();
     const changed = cmd(this, ...args);
     if (changed && name !== 'undo' && name !== 'redo') {
@@ -818,7 +850,9 @@ export class EditorCore {
     const paraAnc = sc !== null ? (dom.ancestor(sc, dom.isPara) as HTMLElement | null) : null;
 
     const cont = sc !== null ? ((dom.isElement(sc) ? sc : sc.parentNode) as Element | null) : null;
-    const value = cont !== null ? readStyle(cont, paraAnc) : EMPTY_VALUE_STYLE;
+    // skip the getComputedStyle value-read (a forced reflow) while composing — the value-state
+    // isn't needed mid-IME and the toolbar is observe-only then anyway.
+    const value = cont !== null && !this.composing ? readStyle(cont, paraAnc) : EMPTY_VALUE_STYLE;
 
     return {
       bold: has(INLINE_TOGGLES.bold.match),

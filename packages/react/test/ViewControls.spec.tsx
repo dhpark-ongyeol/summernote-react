@@ -33,6 +33,21 @@ describe('View controls (fullscreen / codeview / statusbar / placeholder, multi-
     expect(editable.innerHTML).toBe('<p>edited</p>');
   });
 
+  it('Codeview purifies dangerous HTML on toggle-off (XSS gate)', () => {
+    const { container, getByRole } = render(<SummernoteEditor defaultValue="<p>hi</p>" />);
+    const editable = container.querySelector('.note-editable') as HTMLElement;
+
+    fireEvent.click(getByRole('button', { name: 'Code View' }));
+    const textarea = container.querySelector('.note-codable') as HTMLTextAreaElement;
+    fireEvent.change(textarea, {
+      target: { value: '<p>ok</p><script>alert(1)</script><iframe src="https://evil.com"></iframe>' },
+    });
+    fireEvent.click(getByRole('button', { name: 'Code View' })); // toggle off -> purify -> setHTML
+
+    expect(editable.innerHTML).toContain('<p>ok</p>');
+    expect(editable.innerHTML).not.toMatch(/<script|evil\.com/i);
+  });
+
   it('Codeview disables the formatting toolbar (Bold)', () => {
     const { getByRole } = render(<SummernoteEditor defaultValue="<p>x</p>" />);
     expect(getByRole('button', { name: 'Bold' }).hasAttribute('disabled')).toBe(false);

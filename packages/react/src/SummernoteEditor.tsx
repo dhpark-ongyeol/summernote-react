@@ -14,6 +14,7 @@ import {
   defaultOptions,
   langEnUS,
   resolveLang,
+  purifyCodeview,
   type EditorCore,
   type EditorCoreOptions,
   type LangPartial,
@@ -150,18 +151,6 @@ export const SummernoteEditor = forwardRef<SummernoteEditorHandle, SummernoteEdi
     [core],
   );
 
-  // Controlled: push an external value into the engine ONLY when it genuinely differs AND is not
-  // an echo of our own onChange (lastEmitted guard) — prevents caret-destroying re-seeds.
-  useEffect(() => {
-    if (value === undefined || core === null) {
-      return;
-    }
-    if (value === lastEmitted.current || value === core.getHTML()) {
-      return;
-    }
-    core.setHTML(value);
-  }, [value, core]);
-
   const chromeOptions = useMemo(
     () => (toolbar ? { ...defaultOptions, toolbar } : defaultOptions),
     [toolbar],
@@ -171,6 +160,28 @@ export const SummernoteEditor = forwardRef<SummernoteEditorHandle, SummernoteEdi
   const [fullscreen, setFullscreen] = useState(false);
   const [codeview, setCodeview] = useState(false);
   const [codeHtml, setCodeHtml] = useState('');
+  // latest codeview state read by stable handlers (keeps `ui`/`chrome` identity off codeHtml).
+  const codeStateRef = useRef({ codeview, codeHtml });
+  codeStateRef.current = { codeview, codeHtml };
+
+  // Controlled: push an external value into the engine ONLY when it genuinely differs AND is not
+  // an echo of our own onChange (lastEmitted guard) — prevents caret-destroying re-seeds. While
+  // codeview is open the textarea owns the content, so route the external value there instead.
+  useEffect(() => {
+    if (value === undefined || core === null) {
+      return;
+    }
+    if (codeview) {
+      if (value !== codeHtml) {
+        setCodeHtml(value);
+      }
+      return;
+    }
+    if (value === lastEmitted.current || value === core.getHTML()) {
+      return;
+    }
+    core.setHTML(value);
+  }, [value, core, codeview, codeHtml]);
 
   const closeDialog = useCallback((): void => {
     setDialog(null);
@@ -189,9 +200,13 @@ export const SummernoteEditor = forwardRef<SummernoteEditorHandle, SummernoteEdi
       openHelpDialog: () => open('help'),
       toggleFullscreen: () => setFullscreen((f) => !f),
       toggleCodeview: () => {
-        // side effects in the handler (not a state updater — StrictMode-safe)
-        if (codeview) {
-          core?.setHTML(codeHtml); // leaving: apply the edited HTML back to the engine
+        // read latest codeview state from a ref so this handler (and `ui`/`chrome`) stays stable
+        // across codeview keystrokes — no per-keystroke chrome re-render.
+        const cs = codeStateRef.current;
+        if (cs.codeview) {
+          // leaving: PURIFY the (attacker-influenceable) textarea HTML before applying it — the
+          // codeview XSS gate (matches the legacy codeviewFilter:true default).
+          core?.setHTML(purifyCodeview(cs.codeHtml));
           core?.focus();
           setCodeview(false);
         } else {
@@ -200,7 +215,7 @@ export const SummernoteEditor = forwardRef<SummernoteEditorHandle, SummernoteEdi
         }
       },
     };
-  }, [core, codeview, codeHtml]);
+  }, [core]);
 
   // route keyboard-shortcut methods that aren't editing commands to the chrome UI
   shortcutRef.current = (method: string): boolean => {

@@ -31,14 +31,17 @@ export function Handle({ img, top, left, width, height, onResize }: HandleProps)
       return;
     }
     const w = Math.max(10, drag.current.startW + (e.clientX - drag.current.startX));
-    img.style.width = `${w}px`;
-    onResize?.();
+    img.style.width = `${w}px`; // mutate directly; do NOT re-render mid-drag (drops pointer capture)
   };
   const endDrag = (e: React.PointerEvent<HTMLDivElement>): void => {
+    const wasDragging = drag.current !== null;
     drag.current = null;
     const t = e.target as HTMLElement;
     if (t.hasPointerCapture(e.pointerId)) {
       t.releasePointerCapture(e.pointerId);
+    }
+    if (wasDragging) {
+      onResize?.(); // re-measure once, after the gesture — frame + size readout reflect the result
     }
   };
 
