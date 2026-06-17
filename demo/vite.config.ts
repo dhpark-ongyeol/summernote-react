@@ -5,7 +5,10 @@ import { fileURLToPath } from 'node:url';
 const fromRoot = (p: string): string => fileURLToPath(new URL(p, import.meta.url));
 
 // the demo imports the editor SOURCE directly (no build step) — alias the package + its @engine.
-export default defineConfig({
+// `base` for a production build = the GitHub Pages project path (https://eaeao.github.io/summernote-react/);
+// dev serves at '/'. Override at build time with `vite build --base=/your-repo/` if you fork/rename.
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? '/summernote-react/' : '/',
   plugins: [react()],
   resolve: {
     dedupe: ['react', 'react-dom'],
@@ -14,4 +17,4 @@ export default defineConfig({
       '@engine': fromRoot('../src/engine/index.ts'),
     },
   },
-});
+}));
