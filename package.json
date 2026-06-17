@@ -3,6 +3,24 @@
   "version": "1.0.2",
   "description": "React + TypeScript port of summernote — editor engine + React bindings in one package (zero runtime deps, no jQuery, no execCommand)",
   "license": "MIT",
+  "author": "eaeao",
+  "homepage": "https://github.com/eaeao/summernote-react#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eaeao/summernote-react.git"
+  },
+  "bugs": {
+    "url": "https://github.com/eaeao/summernote-react/issues"
+  },
+  "keywords": [
+    "summernote",
+    "wysiwyg",
+    "editor",
+    "rich-text",
+    "react",
+    "typescript",
+    "contenteditable"
+  ],
   "type": "module",
   "sideEffects": [
     "**/*.css"
