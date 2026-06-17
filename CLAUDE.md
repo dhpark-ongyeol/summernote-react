@@ -24,17 +24,18 @@
 
 > 패키지 매니저는 **Yarn** (node-modules linker, [.yarnrc.yml](.yarnrc.yml)).
 
+> ⚠️ **v1.0(2026-06-18)에 레거시 jQuery 소스(`src/`·`public/`·`examples/`·레거시 빌드)를 전부 제거**했다. 프로젝트는 이제 `packages/`(core+react)의 순수 React+TS 모노레포다. 아래 일부 섹션은 **포팅의 출처가 된 레거시 아키텍처를 historical reference로** 기술한다(원본은 git 히스토리에 있음). 생성 산출물(46 로케일·icons.css·골든 코퍼스)은 커밋돼 있어 레거시 없이 자립한다.
+
 | 명령 | 설명 |
 |---|---|
 | `yarn install` | 의존성 설치 |
-| `yarn dev` | 개발 서버 (`vite.config.dev.js`, `examples/`·`index.html` 라이브) |
-| `yarn prebuild` | SVG 아이콘 → webfont 생성 ([scripts/build-fonts.js](scripts/build-fonts.js)) |
-| `yarn build` | 기본(lite) 번들 빌드 |
-| `yarn buildall` | prebuild + 4개 테마 × (min/non-min) 전체 빌드 + dist zip ([scripts/build-all.js](scripts/build-all.js)) |
-| `yarn lint` | ESLint (`src`, `public/plugin`, `public/lang`, `test`, `scripts`) |
-| `yarn test` | Vitest 1회 실행 (headless Chrome) |
-| `yarn test:watch` | Vitest watch 모드 |
-| `yarn test -- test/base/core/dom.spec.js` | 단일 spec 실행 |
+| `yarn verify` | jQuery-ban + zero-dep 게이트 + 양 패키지 typecheck |
+| `yarn build:packages` | core·react dual 빌드(ESM+CJS+.d.ts, tsup) |
+| `yarn test` | Vitest 전체 (chromium+webkit) — ⚠️ 무겁다, [[test-resource-policy]] |
+| `yarn test:watch` | Vitest watch |
+| `node_modules/.bin/vitest run <spec> --project=chromium` | **개발 중 권장**: 단일 spec, chromium 단일 엔진, 실행 후 프로세스 정리 |
+| `yarn lint:no-jquery` / `yarn check:deps` | CI 게이트 단독 실행 |
+| `yarn changeset` / `version-packages` / `release` | changesets 릴리스 플로우 |
 
 ## 디렉토리 구조
 
