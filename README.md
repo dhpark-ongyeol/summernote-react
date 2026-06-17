@@ -1,10 +1,13 @@
 # @eaeao/summernote-react
 
 [![npm](https://img.shields.io/npm/v/@eaeao/summernote-react.svg)](https://www.npmjs.com/package/@eaeao/summernote-react)
+[![demo](https://img.shields.io/badge/demo-live-8a2be2)](https://eaeao.github.io/summernote-react/)
 [![license](https://img.shields.io/npm/l/@eaeao/summernote-react.svg)](./LICENSE)
 ![runtime deps: 0](https://img.shields.io/badge/runtime%20deps-0-brightgreen)
 ![no jQuery](https://img.shields.io/badge/jQuery-0-brightgreen)
 ![types](https://img.shields.io/badge/types-included-blue)
+
+**▶ Live demo: https://eaeao.github.io/summernote-react/**
 
 A **React + TypeScript** port of the [summernote](https://summernote.org) WYSIWYG editor — the
 editor engine and the React bindings in **one package**, with **zero runtime dependencies**, **no
@@ -108,12 +111,18 @@ Reference plugins ship in the box: `helloPlugin`, `specialcharsPlugin`, `databas
 
 ## Demo
 
-A live demo (themes, 46 locales, air mode, a custom plugin, controlled HTML, the imperative ref,
-two editors coexisting) lives in [`demo/`](demo) and runs the editor straight from source:
+**Live: https://eaeao.github.io/summernote-react/** (themes, 46 locales, air mode, a custom plugin,
+controlled HTML, the imperative ref, two editors coexisting).
+
+Or run it locally — the [`demo/`](demo) app loads the editor straight from source:
 
 ```bash
 cd demo && yarn install && yarn dev      # http://localhost:5173
 ```
+
+> Hosting: the [`deploy-demo`](.github/workflows/deploy-demo.yml) workflow builds `demo/` and
+> publishes it to GitHub Pages on every push to `main`. One-time: repo **Settings → Pages → Source =
+> GitHub Actions**.
 
 ## Development
 
