@@ -1,18 +1,134 @@
 /**
- * core.env — object which checks platform and agent.
- * Ported 1:1 from src/js/core/env.js (jQuery removed: $.inArray -> Array.includes).
+ * core.env — engine-accurate platform/agent detection + feature-detect flags.
+ *
+ * Redesigned (NOT a 1:1 port of the legacy env.js) per PORTING-PLAN §13.1: the legacy file
+ * misclassifies engines (`isWebkit` true on Chrome, `isChrome` true on Chromium Edge, no
+ * iOS/Android/Samsung distinction). Every WebKit/iOS caret workaround keys off the engine flags,
+ * so they must be correct or the guards no-op on Safari.
+ *
+ * RULE (§13.1): branch touch/geometry behavior on the FEATURE-DETECT flags
+ * (hasPointerEvent/hasVisualViewport/isCoarsePointer), never on isSafari/isBlink. Engine flags
+ * gate only the documented browser-bug workarounds (e.g. WebKit caret ejection).
+ *
+ * `detectEnv(nav, win)` is a pure factory taking navigator/window-like objects — the injection
+ * seam so tests can exercise each branch without a real device.
  */
 
-/**
- * returns whether font is installed or not.
- *
- * @param fontName
- * @return
- */
+export interface NavigatorLike {
+  readonly userAgent?: string;
+  readonly platform?: string;
+  readonly appVersion?: string;
+  readonly maxTouchPoints?: number;
+  readonly virtualKeyboard?: unknown;
+}
+
+export interface WindowLike {
+  readonly PointerEvent?: unknown;
+  readonly visualViewport?: unknown;
+  readonly matchMedia?: (query: string) => { matches: boolean };
+  readonly document?: Document;
+}
+
+export interface EnvFlags {
+  // platform
+  readonly isMac: boolean;
+  readonly isIOS: boolean;
+  readonly isAndroid: boolean;
+  // engine (mutually exclusive intent: exactly one of isBlink/isAppleWebKit/isFF/isMSIE is the
+  // primary engine for a given UA; isSafari/isSamsungInternet/isEdge refine the Blink/WebKit ones)
+  readonly isBlink: boolean;
+  readonly isAppleWebKit: boolean;
+  readonly isSafari: boolean;
+  readonly isFF: boolean;
+  readonly isMSIE: boolean;
+  readonly isEdge: boolean;
+  readonly isSamsungInternet: boolean;
+  readonly browserVersion: number | undefined;
+  // feature detection (branch touch/geometry on THESE)
+  readonly hasPointerEvent: boolean;
+  readonly hasVisualViewport: boolean;
+  readonly hasVirtualKeyboard: boolean;
+  readonly isCoarsePointer: boolean;
+  readonly maxTouchPoints: number;
+  readonly isSupportTouch: boolean;
+  // misc
+  readonly isW3CRangeSupport: boolean;
+  readonly inputEventName: string;
+}
+
+export function detectEnv(nav: NavigatorLike, win: WindowLike): EnvFlags {
+  const ua = nav.userAgent ?? '';
+  const platform = nav.platform ?? '';
+  const maxTouchPoints = nav.maxTouchPoints ?? 0;
+
+  // iPadOS 13+ reports as desktop Safari (platform MacIntel) — disambiguate via touch points.
+  const isIOS = /iP(hone|od|ad)/.test(ua) || (platform === 'MacIntel' && maxTouchPoints > 1);
+  const isAndroid = /Android/i.test(ua);
+
+  const isMSIE = /MSIE|Trident/i.test(ua);
+  const isFF = /\b(Firefox|FxiOS)\//.test(ua) && !/Seamonkey/i.test(ua);
+  const isSamsungInternet = /SamsungBrowser/i.test(ua);
+  const isEdge = /\bEdg(e|A|iOS)?\//.test(ua); // Chromium Edge (Edg/), Android (EdgA), iOS (EdgiOS)
+
+  // Any Chromium UA token. CriOS = Chrome-on-iOS, which is actually WebKit underneath.
+  const hasChromeToken = /\b(Chrome|Chromium)\//.test(ua);
+  const isIosWrapper = /\b(CriOS|FxiOS|EdgiOS)\//.test(ua); // Chromium/FF/Edge skins that run on WebKit
+
+  // Blink = Chromium engine on a non-iOS platform (Apple forbids non-WebKit engines on iOS).
+  const isBlink = !isIOS && !isMSIE && !isFF && (hasChromeToken || isSamsungInternet || isEdge);
+  // Apple WebKit = iOS (always WebKit) or a non-Blink desktop WebKit (Safari).
+  const isAppleWebKit = !isMSIE && !isFF && !isBlink && (isIOS || /AppleWebKit/.test(ua));
+  // Safari proper = WebKit, the Safari token present, and NOT a Chrome/FF/Edge iOS wrapper.
+  const isSafari = isAppleWebKit && /Safari\//.test(ua) && !hasChromeToken && !isIosWrapper;
+
+  let browserVersion: number | undefined;
+  if (isMSIE) {
+    const m1 = /MSIE (\d+[.]\d+)/.exec(ua);
+    if (m1 && m1[1]) {
+      browserVersion = parseFloat(m1[1]);
+    }
+    const m2 = /Trident\/.*rv:([0-9]{1,}[.0-9]{0,})/.exec(ua);
+    if (m2 && m2[1]) {
+      browserVersion = parseFloat(m2[1]);
+    }
+  }
+
+  const isMac = /Mac/.test(platform) || /Mac OS X/.test(ua) || isIOS;
+
+  const isCoarsePointer =
+    typeof win.matchMedia === 'function' ? win.matchMedia('(pointer: coarse)').matches : maxTouchPoints > 0;
+  const isSupportTouch = 'ontouchstart' in win || maxTouchPoints > 0;
+
+  return {
+    isMac,
+    isIOS,
+    isAndroid,
+    isBlink,
+    isAppleWebKit,
+    isSafari,
+    isFF,
+    isMSIE,
+    isEdge,
+    isSamsungInternet,
+    browserVersion,
+    hasPointerEvent: typeof win.PointerEvent !== 'undefined',
+    hasVisualViewport: win.visualViewport !== undefined && win.visualViewport !== null,
+    hasVirtualKeyboard: nav.virtualKeyboard !== undefined && nav.virtualKeyboard !== null,
+    isCoarsePointer,
+    maxTouchPoints,
+    isSupportTouch,
+    isW3CRangeSupport: !!win.document && !!win.document.createRange,
+    // [workaround] IE has no input event for contentEditable; isolated behind isMSIE.
+    inputEventName: isMSIE ? 'DOMCharacterDataModified DOMSubtreeModified DOMNodeInserted' : 'input',
+  };
+}
+
+// --- font detection (real-document only; unchanged from the legacy port) ---
+
 const genericFontFamilies = ['sans-serif', 'serif', 'monospace', 'cursive', 'fantasy'];
 
 function validFontName(fontName: string): string {
-  return (!genericFontFamilies.includes(fontName.toLowerCase())) ? `'${fontName}'` : fontName;
+  return !genericFontFamilies.includes(fontName.toLowerCase()) ? `'${fontName}'` : fontName;
 }
 
 function createIsFontInstalledFunc(): (fontName: string) => boolean {
@@ -33,68 +149,20 @@ function createIsFontInstalledFunc(): (fontName: string) => boolean {
     context.clearRect(0, 0, canvasWidth, canvasHeight);
     context.font = fontSize + ' ' + validFontName(font) + ', "' + testFontName + '"';
     context.fillText(testText, canvasWidth / 2, canvasHeight / 2);
-    // Get pixel information
-    const pxInfo = context.getImageData(0, 0, canvasWidth, canvasHeight).data;
-    return pxInfo.join('');
+    return context.getImageData(0, 0, canvasWidth, canvasHeight).data.join('');
   }
 
   return (fontName: string): boolean => {
     const testFontName = fontName === 'Comic Sans MS' ? 'Courier New' : 'Comic Sans MS';
-    const testInfo = getPxInfo(testFontName, testFontName);
-    const fontInfo = getPxInfo(fontName, testFontName);
-    return testInfo !== fontInfo;
+    return getPxInfo(testFontName, testFontName) !== getPxInfo(fontName, testFontName);
   };
 }
 
-const userAgent = navigator.userAgent;
-const isMSIE = /MSIE|Trident/i.test(userAgent);
-let browserVersion: number | undefined;
-if (isMSIE) {
-  let matches = /MSIE (\d+[.]\d+)/.exec(userAgent);
-  if (matches) {
-    browserVersion = parseFloat(matches[1]);
-  }
-  matches = /Trident\/.*rv:([0-9]{1,}[.0-9]{0,})/.exec(userAgent);
-  if (matches) {
-    browserVersion = parseFloat(matches[1]);
-  }
-}
+const flags = detectEnv(typeof navigator !== 'undefined' ? navigator : {}, typeof window !== 'undefined' ? window : {});
 
-const isEdge = /Edge\/\d+/.test(userAgent);
-
-const isSupportTouch =
-  (('ontouchstart' in window) ||
-   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-   ((navigator as any).MaxTouchPoints > 0) ||
-   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-   ((navigator as any).msMaxTouchPoints > 0));
-
-// [workaround] IE doesn't have input events for contentEditable
-// - see: https://goo.gl/4bfIvA
-const inputEventName = (isMSIE) ? 'DOMCharacterDataModified DOMSubtreeModified DOMNodeInserted' : 'input';
-
-/**
- * @class core.env
- *
- * Object which check platform and agent
- *
- * @singleton
- * @alternateClassName env
- */
 const env = {
-  isMac: navigator.appVersion.indexOf('Mac') > -1,
-  isMSIE,
-  isEdge,
-  isFF: !isEdge && /firefox/i.test(userAgent),
-  isPhantom: /PhantomJS/i.test(userAgent),
-  isWebkit: !isEdge && /webkit/i.test(userAgent),
-  isChrome: !isEdge && /chrome/i.test(userAgent),
-  isSafari: !isEdge && /safari/i.test(userAgent) && (!/chrome/i.test(userAgent)),
-  browserVersion,
-  isSupportTouch,
-  isFontInstalled: createIsFontInstalledFunc(),
-  isW3CRangeSupport: !!document.createRange,
-  inputEventName,
+  ...flags,
+  isFontInstalled: typeof document !== 'undefined' ? createIsFontInstalledFunc() : (): boolean => false,
   genericFontFamilies,
   validFontName,
 };
