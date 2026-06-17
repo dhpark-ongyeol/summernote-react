@@ -219,10 +219,10 @@ root: tsconfig.base.json, vitest.config.ts(browser mode, src 별칭), .changeset
 - **Samsung Internet headless 드라이버 없음 + 삼성키보드가 raw contentEditable도 깨뜨림**(Med-High): 'Android Chrome이 커버' 가정 금지 → Tier-4 실기기 + Tier-5 수동 1급 타깃.
 - **거짓 확신**(High/process): Playwright WebKit·emulated green인데 실 iOS/Samsung 실패 → emulated 라벨 명시, 실기기+수동을 비협상 릴리스 게이트로.
 
-### 13.7 운영/범위 결정 필요 (사용자)
-1. **실기기 클라우드 + 수동-IME 릴리스 게이트** 예산·소유자(BrowserStack 권고) — 없으면 iOS Safari·Samsung 패리티 검증 불가 = "모바일 완벽" 보장 불가.
-2. **브라우저 지원 하한**: iOS Safari·Android Chrome·Samsung Internet 각 current+current-1? Firefox(데스크톱)는 명시 범위 밖 — non-gating Playwright 인스턴스로 둘지(거의 무료).
-3. **모바일 air/선택 툴바 아래 배치** divergence 승인(타이트 viewport+키보드 시 충돌-free 자리 없을 수 있음).
+### 13.7 운영/범위 결정 (✅ 확정 2026-06-17)
+1. ✅ **실기기 게이트 = BrowserStack 채택**(실-iOS-Safari Playwright + OSS Samsung Internet) + 릴리스마다 **수동-IME 체크리스트 sign-off 소유자 1명 지정**(배정은 Phase 4 전까지). nightly+release에만 실행 — 머지 속도 영향 최소.
+2. ✅ **지원 하한 = iOS Safari · Android Chrome · Samsung Internet 각 current + current-1.** **데스크톱 Firefox = non-gating** Playwright 인스턴스(조기 경고용, 머지/릴리스 게이트엔 미포함).
+3. ✅ **모바일 air/선택 툴바 = 선택 영역 아래 배치**(키보드 가림 시 키보드 위 dock fallback) — 데스크톱(위)과 의도적 divergence, release-note 명시.
 
 ---
 *본 계획서는 13개 설계 에이전트(엔진-이식 3제안 + 심사 + 서브시스템 8 + 로드맵) + 크로스브라우저/모바일 보강(6 에이전트)의 종합이며, 사용자 결정(자체 엔진·외부 의존 0·전면 TS화·execCommand v1 제거·Chromium+Safari+모바일 완벽 지원)을 반영해 조정했다. 현 코드베이스 지도는 루트 [CLAUDE.md](../CLAUDE.md).*
