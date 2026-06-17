@@ -5,10 +5,13 @@
 
 ## 한눈에
 
-- 브랜치 `react-ts-port` (main에서 분기, **미푸시**) — 구현 커밋 35개.
-- **🎉 v0.5 달성 — 완전한 lite React 에디터 (레거시 lite 기능 패리티).** 26 spec 파일 전부 green (chromium + webkit), ~288 테스트(×2엔진=576 실행), typecheck strict 클린.
+- 브랜치 `react-ts-port` (main에서 +42 커밋, **미푸시**).
+- **🎉 Phase 3 + Phase 4 완료 (v1 범위).** 29 spec 파일 전부 green (chromium + webkit), **615 테스트 실행 0 실패**, typecheck strict 클린. **core·react 둘 다 tsup 빌드 성공(ESM+CJS+.d.ts)**.
 - **외부 editor/runtime 의존 0, jQuery 0, `document.execCommand` 0.**
-- Phase 3b chrome 전체: 툴바 + 드롭다운(style/font/size/lineheight/para/color/table) · 다이얼로그(link/image/video/help) · 팝오버(link/image/table) + 이미지 리사이즈 handle · fullscreen/codeview/statusbar/placeholder · 키보드 단축키 · 플러그인 API + imperative handle. lite CSS(`@summernote/react/styles.css`).
+- **Phase 3 (v0.5, lite 풀패리티)**: 툴바 + 드롭다운(style/font/size/unit/lineheight/para/color/table) · 다이얼로그(link/image/video/help) · 팝오버(link/image/table) + 이미지 리사이즈 handle · fullscreen/codeview/statusbar/placeholder · 키보드 단축키 · 플러그인 API + imperative handle.
+- **어드버서리얼 리뷰(24 에이전트) → 확인된 15 결함 전부 수정**: **codeview XSS 게이트(codeviewFilter 이식 — §9 하드요구)**, link scheme allowlist, createLink 텍스트편집/blockquote 역변환, ownsRange 가드, ZWNBSP 누수, env FxiOS, 팝오버 위치 추적 등.
+- **Phase 4 (v1)**: bs3/bs4/bs5 테마(per-instance, 공존) · **46 로케일**(생성 스크립트로 레거시 이식) + lang prop · specialchars/databasic 플러그인 · **air mode**(선택영역 플로팅 툴바, visualViewport 좌표, 모바일 below) · Pointer Events 터치(statusbar/handle).
+- 테마 CSS: lite `@summernote/react/styles.css` + `themes/{bs3,bs4,bs5}.css`.
 
 ## 실행법
 
@@ -49,26 +52,20 @@ scripts/        check-no-jquery · check-no-runtime-deps · extract-golden
 
 **골든 parity 게이트**(`golden-parity.spec`): 레거시가 execCommand로 만든 출력을 자체 명령 엔진이 **38 케이스 재현**(왕복+블록+인라인). 인라인은 결정적 마크업(strike→`<s>`) 재기준선. ⇒ "execCommand 없이 레거시 동등" 증명.
 
-## 알려진 갭 / 기술부채
+## 알려진 갭 / 기술부채 (Phase 5 + 하드닝)
 
-- ✅ `EditorState` 확장 완료(bold/italic/underline/strike/sup/sub/ordered·unordered list/align/formatBlock/link/canUndo/canRedo/isComposing) — **구조적 검출**(queryCommandState 미사용, 자체 마크업 결정적 감지). `INLINE_TOGGLES` 맵으로 토글↔하이라이트 단일 출처. 남은 건 fontName/fontSize/색상 등 값-기반 상태(폰트 드롭다운 붙일 때 추가).
-- **인라인 토글은 full-run 선택 검증됨**(골든 케이스). 부분/중첩/혼합 선택 하드닝은 미완 — execCommand 제거의 #1 리스크 long-tail.
-- `insertHorizontalRule` 골든 미게이트(레거시 출력이 quirky `<p><br></p><hr><p>hello</p>` — 자체 출력으로 재기준선 필요).
-- collapsed-cursor 포맷(storedMarks) 미구현.
-- `Style.current`는 1:1 유지(queryCommandState) 하되 EditorState에는 미연결(EditorCore는 구조적 검출 사용).
-- 전체 패키지 build 그래프 미검증(core/react stub은 ESM+CJS+dts 확인). IE TextRange는 `env.isW3CRangeSupport` 뒤 격리.
-- `__screenshots__/`(vitest 실패 아티팩트)는 gitignore됨. CRLF 경고는 무해(LF 커밋) — 원하면 `.gitattributes` 정규화.
+- **아이콘 webfont 미이식**: SVG→webfont 빌드(scripts/build-fonts.js)는 레거시 전용 — `note-icon-*` 글리프가 없음(구조·클래스는 동작, 드롭다운은 텍스트 폴백). Phase 5에서 webfont 빌드 이식 또는 별도 `@summernote/icons` 패키지.
+- **인라인 토글 부분/중첩/혼합 선택 하드닝** 미완(full-run은 골든 검증) — execCommand 제거 #1 long-tail. collapsed-cursor storedMarks도 미구현(현재 bogus-span만).
+- **Tier-4/Tier-5 실기기·수동-IME 게이트 미실행**(BrowserStack 시크릿 + sign-off 소유자 미배정) — 릴리스 전 필수(§13.7). 현재는 chromium+webkit 자동(Playwright) + env 9-UA 유닛만.
+- **교차테마 byte-equiv 시각 게이트** 미구현(클래스 계약은 Themes.spec으로 검증, computed-style 동등은 미게이트).
+- `insertHorizontalRule` 골든 미게이트(기능은 `commands-link-hr.spec`). `Style.current`(queryCommandState)는 1:1 보존하되 미사용(EditorCore는 구조적 검출).
+- 그래뉼러 패키지(icons/themes-css 분리), changesets, exports-map 검증, publish dry-run = Phase 5.
+- CRLF 경고는 무해(LF 커밋) — 원하면 `.gitattributes` 정규화.
 
-## 다음 단계
+## 다음 단계 — Phase 5 (패키징·배포)
 
-**Phase 2b 마무리 (거의 끝)**
-1. ✅ table 명령 wiring 완료 (insertTable/addRow/addCol/deleteRow/deleteCol/deleteTable, `commands-table.spec`).
-2. (옵션) `insertHorizontalRule`를 golden-parity에 자체 출력으로 재기준선 — 현재 `commands-link-hr.spec`으로 기능 검증됨(`<hr>` 삽입).
-
-**Phase 3 — React chrome → v0.5**
-1. ✅ `EditorState` 확장 완료(전체 active-state, 구조적 검출, `editor-state.spec`).
-2. 테마별 React chrome: ✅ `<Toolbar>`(config `[group,[buttons]]`)+button 완료. **다음:** dropdown(style/fontname/fontsize) · colorpalette · table-picker · 다이얼로그(link/image/video/help, Promise) · 팝오버(link/image/table/air, `coordsAtPos`) · statusbar/handle/fullscreen/placeholder. 명령은 `core.command(name,...)`로 연결. *dropdown/color/font 붙일 때 EditorState에 값-기반 상태(fontName/fontSize/foreColor/backColor) 추가 필요(현재 boolean active-state만).*
-3. `.note-*` 클래스 계약 유지 + lite/bs3/bs4/bs5 ThemeSpec.
-4. 크로스브라우저(§13): Pointer Events 터치, visualViewport 키보드 dock, 모바일 air-popover 아래 배치.
-
-**v0.5 게이트**: lite 테마 풀 기능 + 4테마 byte-equiv `.note-*` + controlled no-clobber + per-instance theme + 실기기/수동-IME(Phase 4 게이트).
+Phase 3+4 완료(v1 기능 범위). 남은 건 릴리스 엔지니어링:
+1. **아이콘 webfont** 이식/패키징(글리프) — 시각 완성.
+2. **Tier-4 실기기(BrowserStack) + Tier-5 수동-IME sign-off** — 릴리스 게이트(§13.7).
+3. 교차테마 computed-style 시각 게이트 + 인라인 토글 엣지케이스 하드닝.
+4. 그래뉼러 패키지 그래프 + changesets + exports-map + publish dry-run → **v1.0**.
