@@ -17,7 +17,7 @@
 - **아이콘**: SVG(`src/font/icons/`) → `webfont`로 TTF/EOT/WOFF/WOFF2 + SCSS 맵 생성 (`prebuild` 훅)
 - **스타일**: SCSS (공통 `src/styles/summernote/*` + 테마별 오버라이드), PostCSS/autoprefixer/cssnano
 - **테스트**: Vitest 1.6 **브라우저 모드(Chrome headless, webdriverio + chromedriver)** — JSDOM 아님. range/selection/computed style을 실제 브라우저 semantic으로 검증.
-- **품질 게이트**: ESLint(`@babel/eslint-parser`, standard config, chai-friendly), Prettier(single quote, 120 width, trailing comma), CI는 Node 18.x/20.x 매트릭스 + CodeQL.
+- **품질 게이트**: ESLint(`@babel/eslint-parser`, `eslint:recommended` + `chai-friendly` 플러그인, 2-space indent·semi 강제·`comma-dangle: always-multiline`), Prettier(single quote, 120 width, `trailingComma: all`), CI는 Node 18.x/20.x 매트릭스 + CodeQL.
 - **트랜스파일**: `@babel/preset-env`로 ES5 호환. `babel-plugin-module-resolver`로 `@` → `src/`.
 
 ### 명령어
