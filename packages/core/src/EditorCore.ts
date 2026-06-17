@@ -45,6 +45,15 @@ export interface EditorState {
   readonly formatBlock: string | null;
   /** true when the caret/selection sits inside an anchor. */
   readonly link: boolean;
+  // --- value-based state (drives dropdown .checked + .note-current-* labels) ---
+  /** first font-family at the caret, dequoted ('' when outside the editor). */
+  readonly fontName: string;
+  /** integer font-size at the caret as a string, e.g. '14' ('' when none). */
+  readonly fontSize: string;
+  /** font-size unit, 'px' | 'pt' | '%' … (defaults 'px'). */
+  readonly fontSizeUnit: string;
+  /** line-height ratio at the caret, e.g. '1.5' ('' when 'normal'/none). */
+  readonly lineHeight: string;
   readonly canUndo: boolean;
   readonly canRedo: boolean;
   readonly isComposing: boolean;
@@ -96,6 +105,52 @@ function readAlign(para: HTMLElement): EditorAlign {
     default:
       return 'left'; // 'start', 'left', '' all render left-aligned
   }
+}
+
+interface ValueStyle {
+  fontName: string;
+  fontSize: string;
+  fontSizeUnit: string;
+  lineHeight: string;
+}
+
+const EMPTY_VALUE_STYLE: ValueStyle = { fontName: '', fontSize: '', fontSizeUnit: 'px', lineHeight: '' };
+
+function dequoteFirstFamily(family: string): string {
+  const first = family.split(',')[0] ?? '';
+  return first.trim().replace(/^['"]|['"]$/g, '');
+}
+
+/**
+ * The structural readStyle seam (PORTING-PLAN §13.1) — derive font/size/line-height from the
+ * caret's element WITHOUT execCommand/queryCommandValue. Inline style wins (it preserves the pt
+ * unit and the user's chosen family); getComputedStyle is the fallback (always px). The chrome
+ * matches fontName against its options.fontNames; here we expose the raw first family.
+ */
+function readStyle(cont: Element, para: HTMLElement | null): ValueStyle {
+  const computed = getComputedStyle(cont);
+  const el = cont as HTMLElement;
+
+  const inlineFamily = el.style ? el.style.fontFamily : '';
+  const fontName = dequoteFirstFamily(inlineFamily !== '' ? inlineFamily : computed.fontFamily);
+
+  const inlineSize = el.style ? el.style.fontSize : '';
+  const rawSize = inlineSize !== '' ? inlineSize : computed.fontSize; // '14px' | '12pt' | …
+  const sizeNum = parseInt(rawSize, 10);
+  const fontSize = Number.isNaN(sizeNum) ? '' : String(sizeNum);
+  const unitMatch = rawSize.match(/[a-z%]+$/i);
+  const fontSizeUnit = unitMatch ? unitMatch[0] : 'px';
+
+  let lineHeight = '';
+  const inlineLH = para && para.style ? para.style.lineHeight : '';
+  if (inlineLH !== '' && inlineLH !== undefined) {
+    lineHeight = inlineLH;
+  } else if (!Number.isNaN(sizeNum) && sizeNum > 0) {
+    const ratio = parseInt(computed.lineHeight, 10) / sizeNum;
+    lineHeight = Number.isFinite(ratio) ? ratio.toFixed(1) : '';
+  }
+
+  return { fontName, fontSize, fontSizeUnit, lineHeight };
 }
 
 function currentRange(): Range | null {
@@ -448,6 +503,9 @@ export class EditorCore {
         : null;
     const paraAnc = sc !== null ? (dom.ancestor(sc, dom.isPara) as HTMLElement | null) : null;
 
+    const cont = sc !== null ? ((dom.isElement(sc) ? sc : sc.parentNode) as Element | null) : null;
+    const value = cont !== null ? readStyle(cont, paraAnc) : EMPTY_VALUE_STYLE;
+
     return {
       bold: has(INLINE_TOGGLES.bold.match),
       italic: has(INLINE_TOGGLES.italic.match),
@@ -460,6 +518,10 @@ export class EditorCore {
       align: paraAnc !== null ? readAlign(paraAnc) : null,
       formatBlock: blockAnc !== null ? blockAnc.nodeName.toLowerCase() : null,
       link: sc !== null && dom.ancestor(sc, dom.isAnchor) !== null,
+      fontName: value.fontName,
+      fontSize: value.fontSize,
+      fontSizeUnit: value.fontSizeUnit,
+      lineHeight: value.lineHeight,
       canUndo: this.history.canUndo(),
       canRedo: this.history.canRedo(),
       isComposing: this.composing,
@@ -481,6 +543,10 @@ export class EditorCore {
       next.align === prev.align &&
       next.formatBlock === prev.formatBlock &&
       next.link === prev.link &&
+      next.fontName === prev.fontName &&
+      next.fontSize === prev.fontSize &&
+      next.fontSizeUnit === prev.fontSizeUnit &&
+      next.lineHeight === prev.lineHeight &&
       next.canUndo === prev.canUndo &&
       next.canRedo === prev.canRedo &&
       next.isComposing === prev.isComposing

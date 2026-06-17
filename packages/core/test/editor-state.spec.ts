@@ -142,6 +142,46 @@ describe('EditorState structural active-state (multi-engine)', () => {
     core.destroy();
   });
 
+  it('reports font-size + unit from inline style (pt preserved)', () => {
+    const el = mount('<div></div>');
+    const core = createEditorCore(el, { value: '<p><span style="font-size: 18pt;">x</span></p>' });
+    const span = el.querySelector('span') as HTMLElement;
+    caretAt(span.firstChild as Node, 0);
+    refresh();
+    expect(core.getSnapshot().fontSize).toBe('18');
+    expect(core.getSnapshot().fontSizeUnit).toBe('pt');
+    core.destroy();
+  });
+
+  it('reports font-family (first family, dequoted)', () => {
+    const el = mount('<div></div>');
+    const core = createEditorCore(el, { value: `<p><span style="font-family: 'Courier New', monospace;">x</span></p>` });
+    caretAt((el.querySelector('span') as HTMLElement).firstChild as Node, 0);
+    refresh();
+    expect(core.getSnapshot().fontName).toBe('Courier New');
+    core.destroy();
+  });
+
+  it('reports line-height ratio from inline style', () => {
+    const el = mount('<div></div>');
+    const core = createEditorCore(el, { value: '<p style="line-height: 2;">hi</p>' });
+    caretAt((el.querySelector('p') as HTMLElement).firstChild as Node, 0);
+    refresh();
+    expect(core.getSnapshot().lineHeight).toBe('2');
+    core.destroy();
+  });
+
+  it('reports empty value-state when the selection is outside the editor', () => {
+    const el = mount('<div></div>');
+    const core = createEditorCore(el, { value: '<p>hello</p>' });
+    const outside = mount('<p>outside</p>');
+    caretAt(outside.firstChild as Node, 0);
+    refresh();
+    expect(core.getSnapshot().fontName).toBe('');
+    expect(core.getSnapshot().fontSize).toBe('');
+    core.destroy();
+  });
+
   it('reports nothing active when the selection is outside the editor', () => {
     const el = mount('<div></div>');
     const core = createEditorCore(el, { value: '<p>hello</p>' });
