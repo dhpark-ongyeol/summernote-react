@@ -159,7 +159,7 @@ const INLINE_FORMAT_TAGS = ['B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'SUP',
  * selected text runs via Style.styleNodes, or unwrap if the selection already sits inside a
  * matching tag. Markup is deterministic (e.g. strike -> <s>), unlike execCommand.
  */
-function toggleInline(matchTags: string[], nodeName: string): boolean {
+function toggleInline(matchTags: readonly string[], nodeName: string): boolean {
   const rng = wrappedRange.create();
   if (!rng || rng.isCollapsed()) {
     return false; // collapsed-cursor formatting (storedMarks) is a later step

@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import type { EditorCoreOptions } from '@summernote/core';
 import { useSummernote } from './useSummernote';
+import { Toolbar } from './toolbar/Toolbar';
+import type { ToolbarGroup } from './toolbar/buttons';
 
 export interface SummernoteEditorProps {
   /** controlled HTML value */
@@ -9,6 +11,8 @@ export interface SummernoteEditorProps {
   defaultValue?: string;
   onChange?: (html: string) => void;
   options?: Omit<EditorCoreOptions, 'value' | 'onChange'>;
+  /** `[group, buttonKeys]` toolbar config; defaults to every wired command. */
+  toolbar?: readonly ToolbarGroup[];
   className?: string;
 }
 
@@ -18,7 +22,7 @@ export interface SummernoteEditorProps {
  * the editable, so chrome re-renders cannot disturb the caret (the React-vs-contentEditable fix).
  */
 export function SummernoteEditor(props: SummernoteEditorProps): JSX.Element {
-  const { value, defaultValue, onChange, options, className } = props;
+  const { value, defaultValue, onChange, options, toolbar, className } = props;
   const lastEmitted = useRef<string | null>(null);
 
   const coreOptions: EditorCoreOptions = { ...(options ?? {}) };
@@ -47,26 +51,7 @@ export function SummernoteEditor(props: SummernoteEditorProps): JSX.Element {
 
   return (
     <div className={className ? `note-editor ${className}` : 'note-editor'}>
-      <div className="note-toolbar" role="toolbar">
-        <button
-          type="button"
-          className="note-btn note-btn-bold"
-          aria-pressed={state.bold}
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => core?.command('bold')}
-        >
-          Bold
-        </button>
-        <button
-          type="button"
-          className="note-btn note-btn-undo"
-          disabled={!state.canUndo}
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => core?.command('undo')}
-        >
-          Undo
-        </button>
-      </div>
+      <Toolbar core={core} state={state} {...(toolbar ? { config: toolbar } : {})} />
       <div
         ref={editableRef}
         className="note-editable"

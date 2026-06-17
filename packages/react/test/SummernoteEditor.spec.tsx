@@ -24,14 +24,14 @@ describe('SummernoteEditor (multi-engine)', () => {
   });
 
   it('the Bold button applies bold and reflects active state', () => {
-    const { container, getByText } = render(<SummernoteEditor defaultValue="<p>hello</p>" />);
+    const { container, getByRole } = render(<SummernoteEditor defaultValue="<p>hello</p>" />);
     const editable = container.querySelector('.note-editable') as HTMLElement;
     selectContents(editable.querySelector('p') as HTMLElement);
 
-    fireEvent.click(getByText('Bold'));
+    fireEvent.click(getByRole('button', { name: 'Bold' }));
 
     expect(editable.innerHTML).toBe('<p><b>hello</b></p>');
-    expect(getByText('Bold').getAttribute('aria-pressed')).toBe('true');
+    expect(getByRole('button', { name: 'Bold' }).getAttribute('aria-pressed')).toBe('true');
   });
 
   it('does NOT re-render the editable subtree when the chrome re-renders (reconciler exclusion)', () => {
@@ -47,7 +47,7 @@ describe('SummernoteEditor (multi-engine)', () => {
   });
 
   it('mounts idempotently under StrictMode (one live core, no doubled/empty content)', () => {
-    const { container, getByText } = render(
+    const { container, getByRole } = render(
       <StrictMode>
         <SummernoteEditor defaultValue="<p>hi</p>" />
       </StrictMode>,
@@ -56,7 +56,7 @@ describe('SummernoteEditor (multi-engine)', () => {
     expect(editable.innerHTML).toBe('<p>hi</p>');
 
     selectContents(editable.querySelector('p') as HTMLElement);
-    fireEvent.click(getByText('Bold'));
+    fireEvent.click(getByRole('button', { name: 'Bold' }));
     expect(editable.innerHTML).toBe('<p><b>hi</b></p>');
   });
 
@@ -65,11 +65,11 @@ describe('SummernoteEditor (multi-engine)', () => {
       const [html, setHtml] = useState('<p>hello</p>');
       return <SummernoteEditor value={html} onChange={setHtml} />;
     }
-    const { container, getByText } = render(<Controlled />);
+    const { container, getByRole } = render(<Controlled />);
     const editable = container.querySelector('.note-editable') as HTMLElement;
 
     selectContents(editable.querySelector('p') as HTMLElement);
-    fireEvent.click(getByText('Bold'));
+    fireEvent.click(getByRole('button', { name: 'Bold' }));
 
     // bold applied; onChange -> parent value updates -> effect sees value === lastEmitted -> no re-seed
     expect(editable.innerHTML).toBe('<p><b>hello</b></p>');
