@@ -14,6 +14,7 @@ export default defineConfig({
   },
   test: {
     globals: true,
+    setupFiles: ['./test/setup.ts'],
     // Only the ported TS specs run here; legacy test/base/**/*.spec.js (jQuery) are the
     // golden-corpus extraction source, not run by this config.
     include: ['packages/**/test/**/*.spec.ts', 'test/**/*.spec.ts'],
