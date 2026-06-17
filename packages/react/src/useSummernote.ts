@@ -13,7 +13,22 @@ import {
   type EditorState,
 } from '@summernote/core';
 
-const INERT_STATE: EditorState = { bold: false, canUndo: false, canRedo: false, isComposing: false };
+const INERT_STATE: EditorState = {
+  bold: false,
+  italic: false,
+  underline: false,
+  strikethrough: false,
+  superscript: false,
+  subscript: false,
+  orderedList: false,
+  unorderedList: false,
+  align: null,
+  formatBlock: null,
+  link: false,
+  canUndo: false,
+  canRedo: false,
+  isComposing: false,
+};
 
 export interface UseSummernoteResult {
   /** attach to the `.note-editable` div — the engine owns this subtree imperatively. */

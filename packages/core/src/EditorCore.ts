@@ -20,8 +20,31 @@ import { Style } from './editing/Style';
 import { Bullet } from './editing/Bullet';
 import Table from './editing/Table';
 
+export type EditorAlign = 'left' | 'center' | 'right' | 'justify';
+
+/**
+ * The full toolbar active-state, published to subscribers (useSyncExternalStore source).
+ *
+ * Computed STRUCTURALLY (dom.ancestor walks over our own deterministic markup), NOT via the
+ * deprecated `document.queryCommandState` that `Style.current` uses — queryCommandState is
+ * unreliable cross-browser and does not recognize our canonical markup (e.g. `<s>` for strike).
+ * This is the faithful intent of `Buttons.updateCurrentStyle`, made deterministic.
+ */
 export interface EditorState {
   readonly bold: boolean;
+  readonly italic: boolean;
+  readonly underline: boolean;
+  readonly strikethrough: boolean;
+  readonly superscript: boolean;
+  readonly subscript: boolean;
+  readonly orderedList: boolean;
+  readonly unorderedList: boolean;
+  /** alignment of the closest paragraph (null when the selection is outside the editor). */
+  readonly align: EditorAlign | null;
+  /** lowercase tag of the closest format block (p/h1..h6/blockquote/pre), or null. */
+  readonly formatBlock: string | null;
+  /** true when the caret/selection sits inside an anchor. */
+  readonly link: boolean;
   readonly canUndo: boolean;
   readonly canRedo: boolean;
   readonly isComposing: boolean;
@@ -42,8 +65,37 @@ const EMPTY_PARA = '<p><br></p>';
 /** post-compositionend settle window; engine-gate to iOS/WebKit later (see PORTING-PLAN §13.2). */
 const SETTLE_MS = 100;
 
-function isBoldTag(node: Node): boolean {
-  return node.nodeName === 'B' || node.nodeName === 'STRONG';
+/**
+ * Single source of truth for the inline toggles: maps each command to the tags that count as
+ * "active" and the canonical tag to wrap with. Both the toggle commands and the active-state
+ * detection read this, so the button highlight and the toggle behaviour can never drift.
+ */
+const INLINE_TOGGLES = {
+  bold: { match: ['B', 'STRONG'], nodeName: 'B' },
+  italic: { match: ['I', 'EM'], nodeName: 'I' },
+  underline: { match: ['U'], nodeName: 'U' },
+  strikethrough: { match: ['S', 'STRIKE'], nodeName: 'S' },
+  superscript: { match: ['SUP'], nodeName: 'SUP' },
+  subscript: { match: ['SUB'], nodeName: 'SUB' },
+} as const;
+
+/** tags treated as format blocks by formatBlock + the active-state detection. */
+const FORMAT_BLOCK_TAGS = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'PRE'];
+
+/** read the effective alignment of a paragraph (inline style wins; 'start'/'' map to left). */
+function readAlign(para: HTMLElement): EditorAlign {
+  const inline = para.style.textAlign;
+  const value = inline !== '' ? inline : getComputedStyle(para).textAlign;
+  switch (value) {
+    case 'center':
+      return 'center';
+    case 'right':
+      return 'right';
+    case 'justify':
+      return 'justify';
+    default:
+      return 'left'; // 'start', 'left', '' all render left-aligned
+  }
 }
 
 function currentRange(): Range | null {
@@ -174,12 +226,13 @@ const COMMANDS: Record<string, Command> = {
   },
 
   // --- Tier-B inline-format toggles (own-command via Style.styleNodes, NO execCommand) ---
-  bold: (): boolean => toggleInline(['B', 'STRONG'], 'B'),
-  italic: (): boolean => toggleInline(['I', 'EM'], 'I'),
-  underline: (): boolean => toggleInline(['U'], 'U'),
-  strikethrough: (): boolean => toggleInline(['S', 'STRIKE'], 'S'),
-  superscript: (): boolean => toggleInline(['SUP'], 'SUP'),
-  subscript: (): boolean => toggleInline(['SUB'], 'SUB'),
+  bold: (): boolean => toggleInline(INLINE_TOGGLES.bold.match, INLINE_TOGGLES.bold.nodeName),
+  italic: (): boolean => toggleInline(INLINE_TOGGLES.italic.match, INLINE_TOGGLES.italic.nodeName),
+  underline: (): boolean => toggleInline(INLINE_TOGGLES.underline.match, INLINE_TOGGLES.underline.nodeName),
+  strikethrough: (): boolean =>
+    toggleInline(INLINE_TOGGLES.strikethrough.match, INLINE_TOGGLES.strikethrough.nodeName),
+  superscript: (): boolean => toggleInline(INLINE_TOGGLES.superscript.match, INLINE_TOGGLES.superscript.nodeName),
+  subscript: (): boolean => toggleInline(INLINE_TOGGLES.subscript.match, INLINE_TOGGLES.subscript.nodeName),
   removeFormat: (): boolean => clearFormat(),
 
   // --- Tier-A block commands (own surgery via the ported editing engine) ---
@@ -382,12 +435,31 @@ export class EditorCore {
   // --- state ---
   private computeState(): EditorState {
     const range = currentRange();
-    const bold =
-      range !== null && this.ownsRange(range)
-        ? dom.ancestor(range.startContainer, isBoldTag) !== null
-        : false;
+    const sc = range !== null && this.ownsRange(range) ? range.startContainer : null;
+
+    const has = (tags: readonly string[]): boolean =>
+      sc !== null && dom.ancestor(sc, (n: Node) => tags.includes(n.nodeName)) !== null;
+
+    const listAnc =
+      sc !== null ? (dom.ancestor(sc, dom.isList) as HTMLElement | null) : null;
+    const blockAnc =
+      sc !== null
+        ? (dom.ancestor(sc, (n: Node) => FORMAT_BLOCK_TAGS.includes(n.nodeName)) as HTMLElement | null)
+        : null;
+    const paraAnc = sc !== null ? (dom.ancestor(sc, dom.isPara) as HTMLElement | null) : null;
+
     return {
-      bold,
+      bold: has(INLINE_TOGGLES.bold.match),
+      italic: has(INLINE_TOGGLES.italic.match),
+      underline: has(INLINE_TOGGLES.underline.match),
+      strikethrough: has(INLINE_TOGGLES.strikethrough.match),
+      superscript: has(INLINE_TOGGLES.superscript.match),
+      subscript: has(INLINE_TOGGLES.subscript.match),
+      orderedList: listAnc !== null && listAnc.nodeName === 'OL',
+      unorderedList: listAnc !== null && listAnc.nodeName === 'UL',
+      align: paraAnc !== null ? readAlign(paraAnc) : null,
+      formatBlock: blockAnc !== null ? blockAnc.nodeName.toLowerCase() : null,
+      link: sc !== null && dom.ancestor(sc, dom.isAnchor) !== null,
       canUndo: this.history.canUndo(),
       canRedo: this.history.canRedo(),
       isComposing: this.composing,
@@ -399,11 +471,21 @@ export class EditorCore {
     const prev = this.snapshot;
     if (
       next.bold === prev.bold &&
+      next.italic === prev.italic &&
+      next.underline === prev.underline &&
+      next.strikethrough === prev.strikethrough &&
+      next.superscript === prev.superscript &&
+      next.subscript === prev.subscript &&
+      next.orderedList === prev.orderedList &&
+      next.unorderedList === prev.unorderedList &&
+      next.align === prev.align &&
+      next.formatBlock === prev.formatBlock &&
+      next.link === prev.link &&
       next.canUndo === prev.canUndo &&
       next.canRedo === prev.canRedo &&
       next.isComposing === prev.isComposing
     ) {
-      return; // referentially stable — no thrash
+      return; // referentially stable — no thrash (every field unchanged)
     }
     this.snapshot = next;
     for (const l of this.listeners) {
