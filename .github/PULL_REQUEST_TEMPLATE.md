@@ -1,28 +1,23 @@
 <!--
-Thank you for taking your time to contribute to Summernote.
-Please fill out the information below to help us review your pull request.
-After you have filled out the information, please check the boxes below to confirm that you have completed the necessary steps.
+Thanks for contributing to @eaeao/summernote-react.
+Fill out the sections below and check the boxes. See CONTRIBUTING.md for the conventions.
 -->
 
-#### What does this PR do / why do we need it?
+#### What does this PR do / why?
 
-- Describe the feature or bug fix.
-- It is helpful to describe why this PR is needed.
+-
 
-#### Which issue(s) this PR fixes?
+#### Which issue(s) does it fix?
 
-Fixes #<issue_number>
+Fixes #
 
-#### Any background context you want to provide?
+#### Screenshots / notes (if appropriate)
 
-- N/A
-
-#### Screenshot (if appropriate)
-
-- N/A
+-
 
 ### Checklist
 
-- [ ] Added relevant tests or not required
-- [ ] Addressed and resolved all CodeRabbit review comments
-- [ ] Didn't break anything
+- [ ] `yarn verify` passes (jQuery-ban + zero-dep + version gates + typecheck)
+- [ ] Added/updated tests (run on Chromium + WebKit), or not applicable
+- [ ] Added a changeset (`yarn changeset`) if the change is user-facing
+- [ ] Commits follow Conventional Commits (`type(scope): subject`)
