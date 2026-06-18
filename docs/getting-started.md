@@ -1,6 +1,6 @@
 # Getting Started
 
-Install `@eaeao/summernote-react` and render your first editor — a React + TypeScript port of summernote with a self-contained engine, **zero runtime dependencies, no jQuery, and no `document.execCommand`**.
+Install `@eaeao/summernote-react` and render your first editor — a React + TypeScript port of summernote with a self-contained engine, **zero runtime dependencies and no jQuery**.
 
 `@eaeao/summernote-react` ships the editing engine and the React bindings in a single npm package. You use it as a normal React component (`<SummernoteEditor value={html} onChange={setHtml} />`) — there is no `$('.x').summernote(...)` and no global state. `react`/`react-dom` (>= 18) are **peer dependencies**; everything else is bundled.
 

@@ -2,7 +2,7 @@
 
 Extend `@eaeao/summernote-react` with per-instance **commands** and **toolbar buttons** using `definePlugin` — the React/TypeScript replacement for jQuery summernote's global `$.summernote.plugins`.
 
-> This is a React port. There is no `$('.x').summernote(...)`, no `$.extend($.summernote.plugins, …)`, no jQuery, and no `document.execCommand`. A plugin is plain data (`{ name, commands?, buttons? }`) passed to the `<SummernoteEditor>` `plugins` prop. See [Getting started](./getting-started.md), the [component API](./deep-dive.md), and the [engine API](./deep-dive.md) for the surrounding surface.
+> This is a React port. There is no `$('.x').summernote(...)`, no `$.extend($.summernote.plugins, …)`, and no jQuery. A plugin is plain data (`{ name, commands?, buttons? }`) passed to the `<SummernoteEditor>` `plugins` prop. See [Getting started](./getting-started.md), the [component API](./deep-dive.md), and the [engine API](./deep-dive.md) for the surrounding surface.
 
 ---
 
@@ -52,7 +52,7 @@ export function definePlugin(plugin: SummernotePlugin): SummernotePlugin;
 
 ## How a command runs
 
-There is no `execCommand`. Every editing action is an engine **command** dispatched through `core.command(name, ...args): boolean`.
+Every editing action is an engine **command** dispatched through `core.command(name, ...args): boolean`.
 
 1. **Registration.** On mount, `<SummernoteEditor>` walks your `plugins` and calls `core.registerCommand(name, fn)` for each entry in `commands`. Registered (custom) commands take precedence over built-ins of the same name in `core.command()`.
 2. **Dispatch.** A click handler calls the command. From a button component use the `useCommand()` hook; from a ref use `ref.current?.command(name, …)`.
@@ -377,7 +377,7 @@ See [Plugins, Themes & i18n](./deep-dive.md) for the 46 bundled locales and `res
 | **Lifecycle** | `this.initialize()` at plugin **load** (not use), `this.destroy()` for cleanup. | React lifecycle — a button is mounted/unmounted by React; commands are registered when the editor mounts. No `initialize`/`destroy` hooks to author. |
 | **i18n** | `$.extend(true, $.summernote.lang, …)` global deep-merge; read via `options.langInfo`. | `lang` prop deep-merged over en-US by `resolveLang`; read via `useChrome().lang`. |
 | **Theme detection** | `$.summernote.interface` → `'BS3' \| 'BS4' \| 'Lite'`. | Per-instance `theme="lite\|bs3\|bs4\|bs5"` + matching CSS import; multiple themed editors coexist. |
-| **Editing engine** | `document.execCommand` + jQuery. | Structural Range commands — no `execCommand`, no jQuery, zero runtime deps. |
+| **Editing engine** | jQuery-based. | Structural Range commands — no jQuery, zero runtime deps. |
 | **Container/`dialogsInBody`** | `options.dialogsInBody` chooses dialog parent; unique IDs via `this.options.id`. | React portals/state; no manual container or ID juggling. |
 
 ### Source defects from the jQuery docs that do *not* apply here

@@ -10,8 +10,8 @@
 **▶ Live demo: https://eaeao.github.io/summernote-react/**
 
 A **React + TypeScript** port of the [summernote](https://summernote.org) WYSIWYG editor — the
-editor engine and the React bindings in **one package**, with **zero runtime dependencies**, **no
-jQuery**, and **no `document.execCommand`**. Verified on Chromium + WebKit (Safari engine).
+editor engine and the React bindings in **one package**, with **zero runtime dependencies** and **no
+jQuery**. Verified on Chromium + WebKit (Safari engine).
 
 ```bash
 npm install @eaeao/summernote-react
@@ -118,7 +118,7 @@ Reference plugins ship in the box: `helloPlugin`, `specialcharsPlugin`, `databas
 
 ## Why this port
 
-- **No jQuery, no `execCommand`, zero runtime deps** — own Range-based commands with deterministic
+- **No jQuery, zero runtime deps** — own Range-based commands with deterministic
   markup; structurally-detected toolbar state; faithful bookmark-based undo.
 - **Cross-browser** — engine-accurate detection, WebKit caret guards, Pointer Events touch drag,
   visualViewport-aware popovers. Verified on Chromium + WebKit.

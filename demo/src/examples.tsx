@@ -383,7 +383,7 @@ function ImageUpload(): JSX.Element {
 }
 
 export const EXAMPLES: Example[] = [
-  { id: 'basic', emoji: '✏️', title: 'Basic', group: 'Getting started', blurb: 'A default editor — the full toolbar wired to the own-command engine (no execCommand).', Component: Basic },
+  { id: 'basic', emoji: '✏️', title: 'Basic', group: 'Getting started', blurb: 'A default editor — the full toolbar wired to the own-command engine.', Component: Basic },
   { id: 'controlled', emoji: '🔁', title: 'Controlled value', group: 'Getting started', blurb: 'Controlled value / onChange with a live HTML view. React owns the value; the engine owns the caret.', Component: Controlled },
   { id: 'placeholder', emoji: '💬', title: 'Placeholder', group: 'Getting started', blurb: 'A placeholder shown over an empty editable.', Component: Placeholder },
   { id: 'air-mode', emoji: '✈️', title: 'Air mode', group: 'Features', blurb: 'No fixed toolbar — a floating toolbar appears at the selection (below it on touch).', Component: AirModeEx },

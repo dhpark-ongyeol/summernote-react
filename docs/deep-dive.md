@@ -1,6 +1,6 @@
 # Deep dive
 
-Customize `@eaeao/summernote-react`'s toolbar, options, commands, plugins, themes, and i18n to build your very own editor — all through React props and a typed imperative ref, with no jQuery and no `document.execCommand`.
+Customize `@eaeao/summernote-react`'s toolbar, options, commands, plugins, themes, and i18n to build your very own editor — all through React props and a typed imperative ref, with no jQuery.
 
 This is the comprehensive reference. For installation and a first editor, see [Getting started](./getting-started.md).
 
@@ -38,9 +38,9 @@ This is the comprehensive reference. For installation and a first editor, see [G
 
 ## Architecture
 
-`@eaeao/summernote-react` is a from-scratch React + TypeScript port of summernote. The legacy jQuery editor, its runtime, and `document.execCommand` are gone. In their place:
+`@eaeao/summernote-react` is a from-scratch React + TypeScript port of summernote. The legacy jQuery editor and its runtime are gone. In their place:
 
-- **A headless engine** (`EditorCore`, exported as the `@engine` module set) that owns the `contentEditable` subtree imperatively. It performs all editing through structural Range commands and computes toolbar state by walking the caret's ancestor chain — never via `queryCommandState` / `execCommand`.
+- **A headless engine** (`EditorCore`, exported as the `@engine` module set) that owns the `contentEditable` subtree imperatively. It performs all editing through structural Range commands and computes toolbar state by walking the caret's ancestor chain.
 - **React bindings** that render *only the chrome* (toolbar, dropdowns, dialogs, statusbar, popovers) plus a single uncontrolled `contentEditable` leaf. React never reconciles content into the editable, so chrome re-renders cannot disturb the caret.
 
 Key properties:
@@ -51,7 +51,6 @@ Key properties:
 | React | 18+ (peer dependency, with `react-dom`) |
 | Runtime dependencies | **zero** |
 | jQuery | **none** |
-| `document.execCommand` | **none** |
 | Module format | ESM + CJS + `.d.ts` (single dual build) |
 | License | MIT |
 | Verified on | Chromium + WebKit |

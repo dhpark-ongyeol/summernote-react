@@ -9,7 +9,7 @@ interface Feature {
 }
 
 const FEATURES: Feature[] = [
-  { emoji: '🚫', title: 'No jQuery, no execCommand', body: 'The engine computes editor state structurally from the caret’s ancestor chain and edits via its own Range commands.' },
+  { emoji: '🚫', title: 'No jQuery, own engine', body: 'The engine computes editor state structurally from the caret’s ancestor chain and edits via its own Range commands.' },
   { emoji: '📦', title: 'Zero runtime deps', body: 'Only react / react-dom (>=18) as peers; the editing engine is bundled in — ESM + CJS + .d.ts.' },
   { emoji: '🎨', title: 'Per-instance themes', body: 'theme="lite | bs3 | bs4 | bs5" plus the matching CSS — editors with different themes coexist on one page.' },
   { emoji: '🌐', title: '46 bundled locales', body: 'import { locales } and pass lang={locales[\'ko-KR\']}; missing keys fall back to en-US.' },
@@ -34,7 +34,7 @@ export function Home(): JSX.Element {
           React summernote, <span className="grad">reimagined</span>.
         </h1>
         <p className="hero-tag">
-          A TypeScript port on summernote&apos;s own engine — <b>zero runtime deps</b>, no jQuery, no <code>execCommand</code>.
+          A TypeScript port on summernote&apos;s own engine — <b>zero runtime deps</b>, no jQuery.
           The editor engine and the React bindings ship in one package.
         </p>
         <div className="hero-actions">

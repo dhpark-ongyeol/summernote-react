@@ -1,6 +1,6 @@
 # @eaeao/summernote-react
 
-> A React + TypeScript port of summernote — its own engine, zero runtime dependencies, no jQuery, no `document.execCommand`.
+> A React + TypeScript port of summernote — its own engine, zero runtime dependencies, no jQuery.
 
 `@eaeao/summernote-react` is a single npm package that brings the summernote WYSIWYG editor to React 18+ as a real component. The editing engine (range commands, history, tables, lists, structural state detection) and the React bindings ship together, so there are **no runtime dependencies** — `react`/`react-dom` (>=18) are peer dependencies, and the engine is bundled in. You use it the React way: render `<SummernoteEditor value={html} onChange={setHtml} />`, drive it imperatively through a `SummernoteEditorHandle` ref, extend it with `definePlugin(...)`, switch themes per-instance, and localize with bundled `locales`. Verified on Chromium + WebKit.
 
@@ -68,7 +68,7 @@ The `SummernoteEditorHandle` exposes `getCode()`, `setCode(html)`, `command(name
 
 ## Key facts
 
-- **No jQuery, no `execCommand`.** The engine computes editor state structurally from the caret's ancestor chain and edits via its own Range commands.
+- **No jQuery.** The engine computes editor state structurally from the caret's ancestor chain and edits via its own Range commands.
 - **Zero runtime deps.** Only `react` / `react-dom` (>=18) peers; the engine is bundled (ESM + CJS + `.d.ts`).
 - **Per-instance themes.** `theme="lite | bs3 | bs4 | bs5"` plus the matching CSS — multiple editors with different themes coexist on one page.
 - **46 bundled locales.** `import { locales } from '@eaeao/summernote-react'` and pass `lang={locales['ko-KR']}`; missing keys fall back to en-US.

@@ -1,6 +1,6 @@
 # Examples
 
-Runnable TSX recipes for `@eaeao/summernote-react` — a React + TypeScript port of summernote with **zero runtime dependencies, no jQuery, and no `document.execCommand`**. Each recipe mirrors a demo from [summernote.org/examples](https://summernote.org/examples/) but is fully adapted to our React component API.
+Runnable TSX recipes for `@eaeao/summernote-react` — a React + TypeScript port of summernote with **zero runtime dependencies and no jQuery**. Each recipe mirrors a demo from [summernote.org/examples](https://summernote.org/examples/) but is fully adapted to our React component API.
 
 > New here? Start with [Getting Started](./getting-started.md) for installation and the basics, then come back for these recipes. For the full prop / handle / command / option contracts, see the [API reference](./deep-dive.md).
 
