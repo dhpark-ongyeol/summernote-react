@@ -51,7 +51,9 @@
   },
   "files": [
     "dist",
-    "src/styles"
+    "src/styles",
+    "AGENTS.md",
+    "SKILL.md"
   ],
   "engines": {
     "node": ">=18.0.0"

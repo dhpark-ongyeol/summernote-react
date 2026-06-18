@@ -1,5 +1,6 @@
 /**
- * Sync the exported VERSION / CORE_VERSION literals to package.json's version.
+ * Sync every version-pinned artifact to package.json's version: the exported VERSION / CORE_VERSION
+ * constants and the `describes @eaeao/summernote-react@X.Y.Z` line in the AI-facing docs.
  * Run by `yarn version-packages` after changesets bumps package.json. The matching
  * check-version.mjs gate fails the build if these ever drift.
  */
@@ -12,6 +13,8 @@ const { version } = JSON.parse(await readFile(new URL('package.json', root), 'ut
 const targets = [
   ['src/index.ts', /(export const VERSION: string = ')[^']*(';)/],
   ['src/engine/index.ts', /(export const CORE_VERSION: string = ')[^']*(';)/],
+  ['AGENTS.md', /(describes `@eaeao\/summernote-react@)[^`]*(`)/],
+  ['SKILL.md', /(describes `@eaeao\/summernote-react@)[^`]*(`)/],
 ];
 
 for (const [rel, re] of targets) {

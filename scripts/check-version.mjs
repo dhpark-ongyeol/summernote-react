@@ -1,6 +1,7 @@
 /**
- * CI gate: the exported VERSION / CORE_VERSION literals must equal package.json's version.
- * Run `node scripts/sync-version.mjs` to fix drift.
+ * CI gate: every version-pinned artifact must equal package.json's version — the exported
+ * VERSION / CORE_VERSION constants and the `describes @eaeao/summernote-react@X.Y.Z` line in the
+ * AI-facing docs (AGENTS.md, SKILL.md). Run `node scripts/sync-version.mjs` to fix drift.
  */
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -11,6 +12,8 @@ const { version } = JSON.parse(await readFile(new URL('package.json', root), 'ut
 const checks = [
   ['src/index.ts', /export const VERSION: string = '([^']*)'/, 'VERSION'],
   ['src/engine/index.ts', /export const CORE_VERSION: string = '([^']*)'/, 'CORE_VERSION'],
+  ['AGENTS.md', /describes `@eaeao\/summernote-react@([^`]*)`/, 'AGENTS.md'],
+  ['SKILL.md', /describes `@eaeao\/summernote-react@([^`]*)`/, 'SKILL.md'],
 ];
 
 let failed = false;

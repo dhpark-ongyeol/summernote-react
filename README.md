@@ -151,6 +151,10 @@ yarn build    # dual ESM + CJS + .d.ts
 
 Design + status: [docs/PORTING-PLAN.md](docs/PORTING-PLAN.md), [docs/STATUS.md](docs/STATUS.md).
 
+## For AI agents
+
+The package ships machine-readable usage guidance in its npm tarball: [`AGENTS.md`](AGENTS.md) (a dense, self-contained reference) and [`SKILL.md`](SKILL.md) (an Anthropic Agent Skill entry). Both are version-pinned and kept in sync with the release. Combined with the bundled TypeScript declarations, they let coding agents integrate the editor without guessing the API.
+
 ## License
 
 MIT — a port of [summernote](https://github.com/summernote/summernote) (MIT).
