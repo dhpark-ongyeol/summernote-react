@@ -64,6 +64,7 @@ export const defaultOptions = {
     '바탕',
     '바탕체',
     'Arial',
+    'Inter',
     'Tahoma',
     'Times New Roman',
     'Verdana',
