@@ -9,6 +9,12 @@
   --nav-h: 56px;
 }
 
+/* Suspense fallback for lazy routes — reserve the content height so the sticky nav doesn't jump
+   while the docs / playground chunk streams in. */
+.route-fallback {
+  min-height: 70vh;
+}
+
 /* ── top nav (shared shell) ─────────────────────────────── */
 .site-nav {
   position: sticky;
