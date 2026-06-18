@@ -77,6 +77,41 @@
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
+.lang-switch {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.lang-opt {
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.lang-opt:hover {
+  background: var(--bg-soft);
+  color: var(--text);
+  text-decoration: none;
+}
+.lang-opt + .lang-opt {
+  border-left: 1px solid var(--border);
+}
+.lang-opt.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* "not yet translated, showing English" banner */
+.doc-fallback {
+  margin: 0 0 18px;
+  padding: 9px 13px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  background: rgba(109, 94, 252, 0.07);
+  border-radius: 9px;
+  font-size: 13.5px;
+  color: var(--text);
+}
 @media (max-width: 560px) {
   .site-brand-name {
     display: none;

@@ -1,5 +1,7 @@
 import { useEffect, useState, type RefObject } from 'react';
 import { useScrollSpy } from './useScrollSpy';
+import { useLocale } from './useLocale';
+import { t } from './ui-strings';
 
 interface TocItem {
   id: string;
@@ -12,6 +14,7 @@ interface TocItem {
 // the exact same slugs without ever re-slugging a string. Re-reads when the doc (slug) changes.
 export function Toc({ contentRef, slug }: { contentRef: RefObject<HTMLElement>; slug: string }): JSX.Element {
   const [items, setItems] = useState<TocItem[]>([]);
+  const s = t(useLocale());
 
   useEffect(() => {
     const root = contentRef.current;
@@ -32,7 +35,7 @@ export function Toc({ contentRef, slug }: { contentRef: RefObject<HTMLElement>; 
 
   return (
     <aside className="doc-toc">
-      <div className="doc-toc-head">On this page</div>
+      <div className="doc-toc-head">{s.onThisPage}</div>
       <nav>
         {items.map((i) => (
           <a key={i.id} href={`#${i.id}`} className={`doc-toc-link lvl${i.level}${i.id === activeId ? ' active' : ''}`}>
