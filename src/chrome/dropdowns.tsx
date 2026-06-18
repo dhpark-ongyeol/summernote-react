@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useChrome, useCommand } from './ChromeContext';
 import { Dropdown } from './Dropdown';
 import { Palette } from './Palette';
@@ -73,15 +74,21 @@ export function FontNameDropdown(): JSX.Element {
 export function FontSizeDropdown(): JSX.Element {
   const { lang, options, state } = useChrome();
   const cmd = useCommand();
+  // show the caret's font size; keep the last seen value when the caret leaves; default to 16.
+  const lastSize = useRef('16');
+  if (state.fontSize) {
+    lastSize.current = state.fontSize;
+  }
+  const display = state.fontSize || lastSize.current;
   return (
     <Dropdown
       title={lang.font.size}
       toggleClassName="note-btn-size"
       menuClassName="dropdown-fontsize"
-      toggle={<span className="note-current-fontsize">{state.fontSize || ''}</span>}
+      toggle={<span className="note-current-fontsize">{display}</span>}
     >
       {options.fontSizes.map((size) => {
-        const checked = state.fontSize === size;
+        const checked = display === size;
         return (
           <button
             key={size}
