@@ -207,13 +207,14 @@
 
 /* ── playground header (the big hero now lives on Home) ──── */
 .pg-head {
-  padding: 32px 0 20px;
+  padding: 6px 0 22px;
 }
 .pg-title {
   margin: 0 0 8px;
-  font-size: clamp(24px, 4vw, 34px);
+  font-size: 30px;
   font-weight: 700;
   letter-spacing: -0.02em;
+  line-height: 1.15;
 }
 .pg-tag {
   margin: 0;
@@ -223,18 +224,10 @@
   max-width: 640px;
 }
 
-/* offset the playground's sticky rail + anchor targets below the new top nav */
-.bookmark {
-  top: calc(var(--nav-h) + 16px);
-}
+/* offset the playground's anchor targets below the sticky top nav */
 .ex-section,
 .ex-head h1 {
   scroll-margin-top: calc(var(--nav-h) + 14px);
-}
-@media (max-width: 1039px) {
-  .bookmark {
-    top: calc(var(--nav-h) + 10px);
-  }
 }
 
 /* ── docs shell: sidebar + main ─────────────────────────── */
