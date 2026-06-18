@@ -1,0 +1,21 @@
+// markdownlint config for the published docs (rendered on the docs site + GitHub).
+// Internal design docs (PORTING-PLAN / CHROME-SPECS / STATUS) and build artifacts are excluded.
+{
+  "config": {
+    "default": true,
+    "MD013": false, // line length — docs use long prose/table lines intentionally
+    "MD033": false, // inline HTML — prose references tags like <SummernoteEditor>
+    "MD024": { "siblings_only": true }, // allow repeated headings (e.g. "See also") under different parents
+    "MD036": false, // bold labels (**Dropdowns**) used before tables/code, not as headings
+    "MD060": false, // compact table pipes (|---|) are intentional
+    "MD041": true, // first line must be a top-level heading
+    "MD040": true // fenced code blocks must declare a language
+  },
+  "globs": ["README.md", "docs/**/*.md"],
+  "ignores": [
+    "docs/PORTING-PLAN.md",
+    "docs/CHROME-SPECS.md",
+    "docs/STATUS.md",
+    "**/node_modules/**"
+  ]
+}

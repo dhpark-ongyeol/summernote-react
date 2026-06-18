@@ -1,0 +1,48 @@
+name: docs-ci
+
+# Lints the published Markdown docs and checks their internal links on every push/PR that touches them.
+# External (http/https) links are skipped here to keep the gate deterministic — see .github/markdown-link-check.json.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'README.md'
+      - '.markdownlint-cli2.jsonc'
+      - '.github/markdown-link-check.json'
+      - '.github/workflows/docs-ci.yml'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'README.md'
+      - '.markdownlint-cli2.jsonc'
+      - '.github/markdown-link-check.json'
+      - '.github/workflows/docs-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  markdownlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      # globs + rule config live in .markdownlint-cli2.jsonc at the repo root
+      - name: markdownlint
+        run: npx -y markdownlint-cli2@0.22.1
+
+  link-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Check internal links in the published docs
+        run: |
+          files=$(find docs -maxdepth 1 -name '*.md' \
+            ! -name 'PORTING-PLAN.md' ! -name 'CHROME-SPECS.md' ! -name 'STATUS.md')
+          npx -y markdown-link-check@3.13.7 -c .github/markdown-link-check.json $files README.md

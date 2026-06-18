@@ -164,7 +164,7 @@ These drive the `formatBlock` command (the style dropdown calls `formatBlock(tag
 
 The font-family dropdown (`fontname` item) defaults to a Korean-office + Latin set:
 
-```
+```text
 굴림, 굴림체, 궁서, 궁서체, 돋움, 돋움체, 맑은 고딕, 바탕, 바탕체,
 Arial, Inter, Tahoma, Times New Roman, Verdana, Noto Sans KR
 ```
@@ -194,7 +194,7 @@ These drive the `lineHeight(ratio)` command.
 
 The color dropdown (`color` item) renders an 8×8 hex palette (`colors`) with a positionally matched 8×8 name grid (`colorsName`). The default split-button recents are `{ foreColor: '#000000', backColor: '#FFFF00' }` (`colorButton`).
 
-```
+```text
 Row 0: #000000 #424242 #636363 #9C9C94 #CEC6CE #EFEFEF #F7F7F7 #FFFFFF
 Row 1: #FF0000 #FF9C00 #FFFF00 #00FF00 #00FFFF #0000FF #9C00FF #FF00FF
 Row 2: #F7C6CE #FFE7CE #FFEFC6 #D6EFD6 #CEDEE7 #CEE7F7 #D6D6E7 #E7D6DE
@@ -296,7 +296,7 @@ function resolveLang(partial: LangPartial): Lang; // deep-merges over langEnUS p
 
 **46 bundled locales** are available as `locales` (a `Record<string, LangPartial>`); their codes are `localeCodes`:
 
-```
+```text
 ar-AR, az-AZ, bg-BG, bn-BD, ca-ES, cs-CZ, da-DK, de-CH, de-DE, el-GR,
 es-ES, es-EU, fa-IR, fi-FI, fr-FR, gl-ES, he-IL, hr-HR, hu-HU, id-ID,
 it-IT, ja-JP, ko-KR, lt-LT, lt-LV, mn-MN, nb-NO, nl-NL, pl-PL, pt-BR,

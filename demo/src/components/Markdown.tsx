@@ -6,6 +6,7 @@ import rehypeHighlight from 'rehype-highlight';
 import typescript from 'highlight.js/lib/languages/typescript';
 import javascript from 'highlight.js/lib/languages/javascript';
 import bash from 'highlight.js/lib/languages/bash';
+import plaintext from 'highlight.js/lib/languages/plaintext';
 import { MarkdownLink } from './MarkdownLink';
 
 // rehype-slug must run before autolink (anchors need the heading ids), highlight runs last.
@@ -16,7 +17,7 @@ import { MarkdownLink } from './MarkdownLink';
 const rehypePlugins = [
   rehypeSlug,
   [rehypeAutolinkHeadings, { behavior: 'wrap' }],
-  [rehypeHighlight, { detect: false, languages: { typescript, javascript, bash } }],
+  [rehypeHighlight, { detect: false, languages: { typescript, javascript, bash, plaintext } }],
 ] as const;
 
 export function Markdown({ source }: { source: string }): JSX.Element {

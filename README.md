@@ -7,7 +7,7 @@
 ![no jQuery](https://img.shields.io/badge/jQuery-0-brightgreen)
 ![types](https://img.shields.io/badge/types-included-blue)
 
-**▶ Live demo: https://eaeao.github.io/summernote-react/**
+**▶ Live demo: <https://eaeao.github.io/summernote-react/>**
 
 A **React + TypeScript** port of the [summernote](https://summernote.org) WYSIWYG editor — the
 editor engine and the React bindings in **one package**, with **zero runtime dependencies** and **no
@@ -127,7 +127,7 @@ Reference plugins ship in the box: `helloPlugin`, `specialcharsPlugin`, `databas
 
 ## Demo
 
-**Live: https://eaeao.github.io/summernote-react/** (themes, 46 locales, air mode, a custom plugin,
+**Live: <https://eaeao.github.io/summernote-react/>** (themes, 46 locales, air mode, a custom plugin,
 controlled HTML, the imperative ref, two editors coexisting).
 
 Or run it locally — the [`demo/`](demo) app loads the editor straight from source:
