@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import { EXAMPLES, type Example } from './examples';
+import { useState } from 'react';
+import { EXAMPLES, type Example } from '../examples';
+import { useScrollSpy } from '../components/useScrollSpy';
 
 const GROUPS = EXAMPLES.reduce<Record<string, Example[]>>((acc, ex) => {
   (acc[ex.group] ||= []).push(ex);
@@ -8,31 +9,9 @@ const GROUPS = EXAMPLES.reduce<Record<string, Example[]>>((acc, ex) => {
 
 const isWide = (): boolean => typeof window !== 'undefined' && window.innerWidth >= 1040;
 
-export function App(): JSX.Element {
-  const [dark, setDark] = useState(false);
+export function Playground(): JSX.Element {
   const [open, setOpen] = useState(isWide);
-  const [activeId, setActiveId] = useState(EXAMPLES[0].id);
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-  }, [dark]);
-
-  // scroll-spy: highlight the section currently in view in the bookmark menu
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) setActiveId(entry.target.id);
-        }
-      },
-      { rootMargin: '-15% 0px -75% 0px' },
-    );
-    for (const ex of EXAMPLES) {
-      const el = document.getElementById(ex.id);
-      if (el) observer.observe(el);
-    }
-    return () => observer.disconnect();
-  }, []);
+  const activeId = useScrollSpy(EXAMPLES.map((e) => e.id)) || EXAMPLES[0].id;
 
   const closeOnNarrow = (): void => {
     if (!isWide()) setOpen(false);
@@ -41,30 +20,14 @@ export function App(): JSX.Element {
   return (
     <div className="page">
       <div className="page-col">
-        <header className="hero">
-          <div className="hero-brand">
-            <span className="brand-logo">✦</span>
-            <div>
-              <div className="brand-name">summernote&#8209;react</div>
-              <div className="brand-sub">@eaeao · v1.0</div>
-            </div>
-          </div>
-          <h1 className="hero-title">
-            React summernote, <span className="grad">reimagined</span>.
+        <header className="pg-head">
+          <h1 className="pg-title">
+            Playground <span className="grad">·</span> live examples
           </h1>
-          <p className="hero-tag">
-            A TypeScript port on summernote&apos;s own engine — <b>zero runtime deps</b>, no jQuery, no{' '}
-            <code>execCommand</code>. The editor engine and the React bindings in one package.
+          <p className="pg-tag">
+            Every recipe below is a real <code>&lt;SummernoteEditor&gt;</code> running on the source engine — edit any of
+            them right here. Copy the snippet under each card.
           </p>
-          <div className="hero-actions">
-            <span className="pill">npm i @eaeao/summernote-react</span>
-            <a className="btn" href="https://www.npmjs.com/package/@eaeao/summernote-react" target="_blank" rel="noreferrer">
-              npm ↗
-            </a>
-            <a className="btn" href="https://github.com/eaeao/summernote-react" target="_blank" rel="noreferrer">
-              GitHub ↗
-            </a>
-          </div>
         </header>
 
         <main className="sections">
@@ -93,9 +56,6 @@ export function App(): JSX.Element {
       <nav className={`bookmark${open ? ' open' : ''}`}>
         <div className="bookmark-bar">
           <span className="bookmark-heading">📑 Examples</span>
-          <button className="iconbtn sm" onClick={() => setDark((d) => !d)} title="Toggle light / dark" aria-label="Toggle theme">
-            {dark ? '☀️' : '🌙'}
-          </button>
           <button className="iconbtn sm" onClick={() => setOpen((o) => !o)} aria-label="Toggle examples menu">
             {open ? '×' : '≡'}
           </button>
