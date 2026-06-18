@@ -1,3 +1,5 @@
+import { DOCS, type DocEntry } from '../../docs-manifest';
+
 // Docs are the single source of truth: read the same Markdown files committed under /docs.
 // English files are unsuffixed (`getting-started.md`); translations carry a locale suffix
 // (`getting-started.ko.md`). Vite inlines them all as raw strings at build time. DOC_ORDER is the
@@ -13,25 +15,11 @@ export type Locale = (typeof LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = 'en';
 export const LOCALE_LABELS: Record<Locale, string> = { en: 'English', ko: '한국어' };
 
-export interface DocMeta {
-  slug: string;
-  file: string; // the English (default) filename, e.g. 'README.md'
-  title: string;
-  /** Diátaxis section for sidebar grouping; ungrouped (Overview) when omitted. */
-  section?: string;
-}
+// The page list (order, titles, sections, llms.txt descriptions) lives in a framework-agnostic
+// manifest shared with the build (vite.config.ts), so the SPA and the generated AI artifacts agree.
+export type DocMeta = DocEntry;
 
-export const DOC_ORDER: DocMeta[] = [
-  { slug: 'readme', file: 'README.md', title: 'Overview' },
-  { slug: 'getting-started', file: 'getting-started.md', title: 'Getting started', section: 'Tutorial' },
-  { slug: 'examples', file: 'examples.md', title: 'Examples', section: 'How-to' },
-  { slug: 'reference-component', file: 'reference-component.md', title: 'Component & state', section: 'Reference' },
-  { slug: 'reference-commands', file: 'reference-commands.md', title: 'Commands', section: 'Reference' },
-  { slug: 'reference-options', file: 'reference-options.md', title: 'Options & toolbar', section: 'Reference' },
-  { slug: 'reference-api', file: 'reference-api.md', title: 'Headless & plugin API', section: 'Reference' },
-  { slug: 'concepts', file: 'concepts.md', title: 'How it works', section: 'Explanation' },
-  { slug: 'migrating', file: 'migrating.md', title: 'Migrating from jQuery', section: 'Explanation' },
-];
+export const DOC_ORDER: DocMeta[] = DOCS;
 
 // Index raw content by [locale][base-filename]. `README.ko.md` → locale 'ko', base 'README'.
 const rawByLocale: Record<string, Record<string, string>> = {};

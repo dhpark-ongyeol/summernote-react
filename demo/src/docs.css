@@ -112,6 +112,35 @@
   font-size: 13.5px;
   color: var(--text);
 }
+
+/* per-page AI hand-off actions: copy the page as Markdown / open the raw .md */
+.doc-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.doc-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.doc-action:hover {
+  background: var(--bg-soft);
+  color: var(--text);
+  border-color: var(--accent);
+  text-decoration: none;
+}
 @media (max-width: 560px) {
   .site-brand-name {
     display: none;

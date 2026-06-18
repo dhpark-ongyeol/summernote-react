@@ -15,6 +15,9 @@ export interface UiStrings {
   previous: string;
   next: string;
   fallbackBanner: string;
+  copyPage: string;
+  copied: string;
+  viewMarkdown: string;
   /** Sidebar group labels, keyed by the English section name in DOC_ORDER. */
   sections: Record<string, string>;
   // home (landing) page
@@ -54,7 +57,10 @@ export const UI: Record<Locale, UiStrings> = {
     previous: 'Previous',
     next: 'Next',
     fallbackBanner: 'This page has not been translated yet — showing the English version.',
-    sections: { Tutorial: 'Tutorial', 'How-to': 'How-to', Reference: 'Reference', Explanation: 'Explanation' },
+    copyPage: 'Copy page',
+    copied: '✓ Copied',
+    viewMarkdown: 'View as Markdown',
+    sections: { Tutorial: 'Tutorial', 'How-to': 'How-to', Reference: 'Reference', Explanation: 'Explanation', AI: 'AI' },
     home: {
       heroPre: 'React summernote, ',
       heroAccent: 'reimagined',
@@ -94,7 +100,10 @@ export const UI: Record<Locale, UiStrings> = {
     previous: '이전',
     next: '다음',
     fallbackBanner: '이 페이지는 아직 번역되지 않아 영문으로 표시됩니다.',
-    sections: { Tutorial: '튜토리얼', 'How-to': '사용법', Reference: '레퍼런스', Explanation: '설명' },
+    copyPage: '페이지 복사',
+    copied: '✓ 복사됨',
+    viewMarkdown: 'Markdown 보기',
+    sections: { Tutorial: '튜토리얼', 'How-to': '사용법', Reference: '레퍼런스', Explanation: '설명', AI: 'AI' },
     home: {
       heroPre: 'React summernote, ',
       heroAccent: '재해석',

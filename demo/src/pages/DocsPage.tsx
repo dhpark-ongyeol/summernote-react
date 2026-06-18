@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { getDoc, prevNext, slugToPath, type DocMeta, type Locale } from '../lib/docs';
 import { Markdown } from '../components/Markdown';
@@ -29,6 +29,35 @@ function Pager({ prev, next, locale, s }: { prev: DocMeta | null; next: DocMeta 
   );
 }
 
+// Per-page AI hand-off: copy the page's Markdown source, or open its raw .md mirror (emitted into
+// dist/docs/<slug>.md at build time). The Copy button copies the CURRENT locale's source.
+function DocActions({ raw, slug, s }: { raw: string; slug: string; s: UiStrings }): JSX.Element {
+  const [copied, setCopied] = useState(false);
+  const mdHref = `${import.meta.env.BASE_URL}docs/${slug}.md`;
+  return (
+    <div className="doc-actions">
+      <button
+        type="button"
+        className="doc-action"
+        onClick={() => {
+          navigator.clipboard
+            .writeText(raw)
+            .then(() => {
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1500);
+            })
+            .catch(() => undefined);
+        }}
+      >
+        {copied ? s.copied : s.copyPage}
+      </button>
+      <a className="doc-action" href={mdHref} target="_blank" rel="noreferrer">
+        {s.viewMarkdown}
+      </a>
+    </div>
+  );
+}
+
 // `slug` is fixed for the /docs index (README); the /docs/:slug route reads it from the URL.
 export function DocsPage({ slug: fixedSlug }: { slug?: string }): JSX.Element {
   const params = useParams();
@@ -45,6 +74,7 @@ export function DocsPage({ slug: fixedSlug }: { slug?: string }): JSX.Element {
   return (
     <div className="doc-page">
       <article className="doc-prose" ref={contentRef}>
+        <DocActions raw={doc.raw} slug={slug} s={s} />
         {doc.fallbackFrom ? <div className="doc-fallback">{s.fallbackBanner}</div> : null}
         <Markdown source={doc.raw} />
         <Pager prev={prev} next={next} locale={locale} s={s} />
