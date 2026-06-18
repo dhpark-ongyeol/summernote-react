@@ -79,8 +79,8 @@ export function FontNameDropdown(): JSX.Element {
 export function FontSizeDropdown(): JSX.Element {
   const { lang, options, state } = useChrome();
   const cmd = useCommand();
-  // show the caret's font size; keep the last seen value when the caret leaves; default to 16.
-  const lastSize = useRef('16');
+  // show the caret's font size; keep the last seen value when the caret leaves; default to 13.
+  const lastSize = useRef('13');
   if (state.fontSize) {
     lastSize.current = state.fontSize;
   }
