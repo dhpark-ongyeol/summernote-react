@@ -1,5 +1,15 @@
 # @eaeao/summernote-react
 
+## 1.2.0
+
+### Minor Changes
+
+- 83f0f9f: The default toolbar's **Style** group now includes the **font size** and **line height** dropdowns next to the style / format-block picker, rendered as a connected segmented button group (like the bold/underline group). The `fontSize` / `lineHeight` commands and the `fontsize` / `height` toolbar items already existed — this wires them into the default toolbar, tags their toggles `note-btn-size` / `note-btn-height`, and adds CSS so several controls inside one toolbar group connect with overlapping borders and rounded outer corners.
+
+### Patch Changes
+
+- daea37c: Font controls: the default font-family list now ships a Korean-office set (굴림 / 굴림체 / 궁서 / 궁서체 / 돋움 / 돋움체 / 맑은 고딕 / 바탕 / 바탕체 + Arial / Inter / Tahoma / Times New Roman / Verdana / Noto Sans KR), and the font-family / font-size toggles keep the last-seen value when the caret leaves the editor (the font-size toggle defaults to 13).
+
 ## 1.1.0
 
 ### Minor Changes
