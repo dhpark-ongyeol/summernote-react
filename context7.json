@@ -26,6 +26,6 @@
     "theme is a per-instance prop ('lite' default, or 'bs3' | 'bs4' | 'bs5'); editors with different themes can coexist on one page.",
     "onImageUpload(file: File) is called once per picked file and must return or resolve the image src string; without it, picked images are embedded as base64 data URLs.",
     "Zero runtime dependencies; react and react-dom (>= 18) are peer dependencies. TypeScript declarations ship in the package, so no @types/... is needed.",
-    "Security: code-view HTML is purified and link hrefs reject javascript:/vbscript:/data: schemes, but the controlled value, setCode(), and initial HTML are trusted — sanitize untrusted HTML before passing it in."
+    "Security: code-view HTML is purified and unsafe link URL schemes are rejected, but the controlled value, setCode(), and the initial HTML are trusted — sanitize untrusted HTML yourself before passing it in."
   ]
 }
