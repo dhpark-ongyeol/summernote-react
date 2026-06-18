@@ -60,10 +60,10 @@ describe('Toolbar (config-driven from options.toolbar, multi-engine)', () => {
     selectContents(editable.querySelector('p') as HTMLElement);
 
     fireEvent.click(getByRole('button', { name: 'Font Family' }));
-    fireEvent.click(getByRole('button', { name: /Courier New/ }));
+    fireEvent.click(getByRole('button', { name: /맑은 고딕/ }));
 
     const span = editable.querySelector('span') as HTMLElement;
-    expect(span.style.fontFamily.replace(/["']/g, '')).toBe('Courier New');
+    expect(span.style.fontFamily.replace(/["']/g, '')).toBe('맑은 고딕');
   });
 
   it('Color dropdown applies a foreground color', () => {
