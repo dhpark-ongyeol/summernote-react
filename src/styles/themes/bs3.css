@@ -48,3 +48,26 @@
   background: #337ab7;
   border-color: #2e6da4;
 }
+
+/* dark mode (colorScheme="dark|auto") — flip the bs3-specific light surfaces to the shared
+   --note-* dark palette; the accent (.active / primary) and the radius/font stay. */
+.note-editor.note-theme-bs3.note-dark {
+  border-color: var(--note-border);
+}
+.note-editor.note-theme-bs3.note-dark .note-toolbar {
+  background: var(--note-bg-toolbar);
+  border-bottom-color: var(--note-border);
+}
+.note-editor.note-theme-bs3.note-dark .note-btn {
+  color: var(--note-text-ui);
+  background: var(--note-bg-btn);
+  border-color: var(--note-border-btn);
+}
+.note-editor.note-theme-bs3.note-dark .note-btn:hover {
+  background: var(--note-bg-btn-hover);
+  border-color: var(--note-border-btn);
+}
+.note-editor.note-theme-bs3.note-dark .note-statusbar {
+  background: var(--note-bg-toolbar);
+  border-top-color: var(--note-border);
+}

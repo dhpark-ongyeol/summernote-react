@@ -92,8 +92,8 @@ export interface SummernoteEditorProps {
   /** visual theme (per-instance — multiple editors with different themes can coexist). */
   theme?: 'lite' | 'bs3' | 'bs4' | 'bs5';
   /** color scheme: `'light'` (default), `'dark'`, or `'auto'` (follows the OS `prefers-color-scheme`).
-   *  Adds `note-dark` to the root; the lite skin themes all chrome (toolbar/dialogs/popovers/…) from
-   *  it via CSS variables. bs3/bs4/bs5 follow your app's own Bootstrap theme. */
+   *  Adds `note-dark` to the root; all four skins theme their chrome (toolbar/dialogs/popovers/code
+   *  view/…) from it via CSS variables. */
   colorScheme?: 'light' | 'dark' | 'auto';
   /** locale (a LangPartial deep-merged over en-US), e.g. lang={locales['ko-KR']}. */
   lang?: LangPartial;

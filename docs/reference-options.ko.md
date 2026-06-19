@@ -307,7 +307,7 @@ lite 스킨은 색상을 `.note-editor`의 CSS 변수로 정의하므로, 변수
 }
 ```
 
-> bs3/bs4/bs5는 자체 다크 팔레트를 제공하지 않습니다 — 앱의 Bootstrap 테마(예: Bootstrap 5의 `data-bs-theme="dark"`)를 따릅니다. 다크 모드 자체 스타일링은 기본 **lite** 스킨에 구현되어 있습니다.
+> 네 스킨(lite + bs3/bs4/bs5) 모두 다크 모드를 지원합니다 — Bootstrap 스킨도 다크에서 표면에 동일한 `--note-*` 변수를 재사용하며, 강조색과 둥근 모서리는 유지합니다.
 
 ---
 

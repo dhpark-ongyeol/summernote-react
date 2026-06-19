@@ -83,7 +83,7 @@ Full docs (with a live playground) are at **<https://eaeao.github.io/summernote-
 | `onChange(html)` | fired on content change |
 | `toolbar` | `[group, names][]` config (defaults to the summernote default) |
 | `theme` | `'lite'` (default) `'bs3'` `'bs4'` `'bs5'` — per-instance; themes coexist |
-| `colorScheme` | `'light'` (default) `'dark'` `'auto'` — dark mode (lite skin) |
+| `colorScheme` | `'light'` (default) `'dark'` `'auto'` — dark mode (all skins) |
 | `lang` | a locale: `lang={locales['ko-KR']}` |
 | `onImageUpload(file)` | upload a picked image yourself; return/resolve the `src` to insert (else base64) |
 | `airMode`, `placeholder`, `disableResize`, `plugins` | see types |

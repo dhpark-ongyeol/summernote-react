@@ -307,7 +307,7 @@ The lite skin defines its colors as CSS variables on `.note-editor`, so you can 
 }
 ```
 
-> bs3/bs4/bs5 don't ship their own dark palette — they follow your app's Bootstrap theme (e.g. Bootstrap 5's `data-bs-theme="dark"`). Dark mode's own styling is implemented for the default **lite** skin.
+> All four skins (lite + bs3/bs4/bs5) support dark mode — the Bootstrap skins reuse the same `--note-*` variables for their surfaces in dark, keeping their accent color and rounded corners.
 
 ---
 

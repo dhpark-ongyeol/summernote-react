@@ -50,3 +50,25 @@
   background: #0d6efd;
   border-color: #0d6efd;
 }
+
+/* dark mode (colorScheme="dark|auto") — flip the bs5-specific light surfaces to the shared
+   --note-* dark palette; the Bootstrap-blue accent (.active / primary) and the radius/font stay. */
+.note-editor.note-theme-bs5.note-dark {
+  border-color: var(--note-border);
+}
+.note-editor.note-theme-bs5.note-dark .note-toolbar {
+  background: var(--note-bg-toolbar);
+  border-bottom-color: var(--note-border);
+}
+.note-editor.note-theme-bs5.note-dark .note-btn {
+  color: var(--note-text-ui);
+  background: var(--note-bg-btn);
+  border-color: var(--note-border-btn);
+}
+.note-editor.note-theme-bs5.note-dark .note-btn:hover {
+  background: var(--note-bg-btn-hover);
+}
+.note-editor.note-theme-bs5.note-dark .note-statusbar {
+  background: var(--note-bg-toolbar);
+  border-top-color: var(--note-border);
+}
