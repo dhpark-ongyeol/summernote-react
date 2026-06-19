@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { SummernoteEditor, locales } from '@eaeao/summernote-react';
+import { locales } from '@eaeao/summernote-react';
+// follow the site's light/dark toggle (same wrapper the playground uses)
+import { DemoEditor as SummernoteEditor } from '../components/DemoEditor';
 import { useLocale } from '../components/useLocale';
 import { t } from '../components/ui-strings';
 import { localePath } from '../lib/docs';
