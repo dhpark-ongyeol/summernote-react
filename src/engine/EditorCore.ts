@@ -1173,7 +1173,17 @@ export class EditorCore {
       // an extension collapsing the selection on a toolbar press (capture phase, so it always runs).
       this.pointerInEditable = this.editable.contains(e.target as Node);
     };
-    const onKeyDown = (e: KeyboardEvent): void => this.handleShortcut(e);
+    const onKeyDown = (e: KeyboardEvent): void => {
+      // Keep the editor wrapped: a Backspace/Delete that would delete the last empty paragraph
+      // (leaving a wrapper-less, "" editable) is suppressed. That degenerate state makes the next
+      // keystroke's controlled re-seed reassign innerHTML and drop the caret to the editable's
+      // start — landing it BEFORE the just-typed character.
+      if ((e.key === 'Backspace' || e.key === 'Delete') && !e.isComposing && this.isEmptyEditable()) {
+        e.preventDefault();
+        return;
+      }
+      this.handleShortcut(e);
+    };
 
     this.editable.addEventListener('compositionstart', onCompositionStart);
     this.editable.addEventListener('compositionend', onCompositionEnd);
@@ -1193,6 +1203,14 @@ export class EditorCore {
   }
 
   /** map a keydown to a keyMap command (hardware shortcuts only; IME keydowns are ignored). */
+  /** no meaningful content — just an empty paragraph / <br> / whitespace (no text, no embeds). */
+  private isEmptyEditable(): boolean {
+    return (
+      (this.editable.textContent ?? '').trim() === '' &&
+      this.editable.querySelector('img, hr, table, iframe, video, embed, object') === null
+    );
+  }
+
   private handleShortcut(e: KeyboardEvent): void {
     if (this.options.shortcuts === false) {
       return;
